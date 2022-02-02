@@ -316,4 +316,37 @@ namespace Utils
 
         return rowCount;
     }
+
+    void MoveRow(QTableWidget& table, int sourceRow, int destinationRow)
+    {
+        Q_ASSERT(destinationRow >= 0 && destinationRow < table.rowCount());
+        Q_ASSERT(sourceRow >= 0 && sourceRow < table.rowCount());
+
+        QList<QTableWidgetItem*> sourceItems = TakeRow(table, sourceRow);
+        SetRow(table, destinationRow, sourceItems);
+    }
+
+    QList<QTableWidgetItem*> TakeRow(QTableWidget& table, int row)
+    {
+        QList<QTableWidgetItem*> rowItems;
+
+        for (int column = 0; column < table.columnCount(); ++column)
+        {
+            rowItems.append(table.takeItem(row, column));
+        }
+
+        table.removeRow(row);
+
+        return rowItems;
+    }
+
+    void SetRow(QTableWidget& table, int row, const QList<QTableWidgetItem*>& rowItems)
+    {
+        table.insertRow(row);
+
+        for (int column = 0; column < table.columnCount(); ++column)
+        {
+            table.setItem(row, column, rowItems.at(column));
+        }
+    }
 }

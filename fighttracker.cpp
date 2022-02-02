@@ -1092,15 +1092,12 @@ void FightTracker::ReinitFightButtonClicked()
 
     SetRound(1);
 
-    ui->playersFightTable->sortItems((int)Columns::Initiative, Qt::SortOrder::DescendingOrder);
-    ui->monstersFightTable->sortItems((int)Columns::Initiative, Qt::SortOrder::DescendingOrder);
+    SortFightButtonClicked();
 
     for (auto& [item, sheetType] : m_Fighters)
     {
         EnableRow(item, sheetType);
     }
-
-    SortFighters();
 
     if (!m_Fighters.isEmpty())
     {
@@ -1145,6 +1142,25 @@ void FightTracker::SortFightButtonClicked()
 {
     ui->playersFightTable->sortItems((int)Columns::Initiative, Qt::SortOrder::DescendingOrder);
     ui->monstersFightTable->sortItems((int)Columns::Initiative, Qt::SortOrder::DescendingOrder);
+
+    int sortedMonsterCount = 0;
+    int sortedPlayerCount = 0;
+
+    for (int i = 0; i < m_Fighters.count(); ++i)
+    {
+        auto& [fighter, sheetType] = m_Fighters.at(i);
+
+        if (sheetType == TableType::Monster)
+        {
+            Utils::MoveRow(*ui->monstersFightTable, fighter->row(), sortedMonsterCount);
+            ++sortedMonsterCount;
+        }
+        else
+        {
+            Utils::MoveRow(*ui->playersFightTable, fighter->row(), sortedPlayerCount);
+            ++sortedPlayerCount;
+        }
+    }
 
     SortFighters();
 }

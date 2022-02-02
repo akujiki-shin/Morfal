@@ -11,6 +11,7 @@
 class QListWidget;
 class QListWidgetItem;
 class QTableWidget;
+class QTableWidgetItem;
 
 namespace Utils
 {
@@ -46,6 +47,12 @@ namespace Utils
     QString Verticalize(const QString& text);
 
     int GetSelectedRowCount(const QTableWidget& table);
+
+    void MoveRow(QTableWidget& table, int sourceRow, int destinationRow);
+
+    QList<QTableWidgetItem*> TakeRow(QTableWidget& table, int row);
+
+    void SetRow(QTableWidget& table, int row, const QList<QTableWidgetItem*>& rowItems);
 
     template<typename QEnum>
     std::string QtEnumToString(const QEnum value)

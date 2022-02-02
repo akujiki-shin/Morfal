@@ -23,9 +23,11 @@ void UnderlinedRowDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
         {
             for (int i = 0; i <  widget->columnCount(); ++i)
             {
-                QTableWidgetItem* toDisable = widget->item(row, i);
-                toDisable->setBackground(rowBrushes.m_BackgroundBrush);
-                toDisable->setForeground(rowBrushes.m_ForegroundBrush);
+                if (QTableWidgetItem* toDisable = widget->item(row, i))
+                {
+                    toDisable->setBackground(rowBrushes.m_BackgroundBrush);
+                    toDisable->setForeground(rowBrushes.m_ForegroundBrush);
+                }
             }
         }
 
