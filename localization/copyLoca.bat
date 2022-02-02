@@ -1,0 +1,2 @@
+cp -f morfal_fr.ts F:\Qt\Projects\build-InteractiveMap-Desktop_Qt_6_2_0_MSVC2019_64bit-Debug\debug\settings\localization\morfal_fr.ts
+cp -f morfal_fr.ts F:\Qt\Projects\build-InteractiveMap-Desktop_Qt_6_2_0_MSVC2019_64bit-Release\release\settings\localization\morfal_fr.ts

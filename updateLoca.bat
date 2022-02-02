@@ -1,0 +1,1 @@
+lupdate . -extensions cpp,h,ui -ts localization/morfal_fr.ts

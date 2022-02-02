@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>map.qml</file>
+        <file>d20.ico</file>
+    </qresource>
+</RCC>
