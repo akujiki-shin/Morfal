@@ -36,14 +36,13 @@ DrawableMap::DrawableMap(QWidget *parent)
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    //setViewportUpdateMode(ViewportUpdateMode::FullViewportUpdate);
-
     m_PixmapItem = new QGraphicsPixmapItem();
     m_PixmapItem->setTransformationMode(Qt::SmoothTransformation);
     scene->addItem(m_PixmapItem);
 
     m_MapZoneGraphicsObject = new MapZoneGraphicsObject();
     m_MapZoneGraphicsObject->SetMapImage(&m_MapImage);
+    m_MapZoneGraphicsObject->SetView(this);
 
     scene->addItem(m_MapZoneGraphicsObject);
 

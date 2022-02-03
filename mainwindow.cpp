@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->fightTrackerWidget->SetFiltersCurrentText(m_LastEncounterDataFilterText, m_LastEncounterZoneFilterText);
 
-    m_InteractiveMap->Initialize(m_LastLoadedMapPath);
+    m_InteractiveMap->Initialize();
     ui->fightTrackerWidget->InitializeFilters();
 
     m_ExpandedServerText = "<<\n\n" + Utils::Verticalize(tr("server")) + "\n<<";
@@ -68,6 +68,17 @@ MainWindow::~MainWindow()
     delete m_InteractiveMap;
 
     delete ui;
+}
+
+void MainWindow::showEvent(QShowEvent* event)
+{
+    super::showEvent(event);
+
+    if (!m_IsUiLoaded)
+    {
+        m_InteractiveMap->OnUiLoaded(m_LastLoadedMapPath);
+        m_IsUiLoaded = true;
+    }
 }
 
 void MainWindow::SetupUpExpandableFrames()

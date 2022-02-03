@@ -57,7 +57,7 @@ InteractiveMap::InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* cha
     ui->jsonDataList->SetMainWindow(mainWindowUi);
 }
 
-void InteractiveMap::Initialize(const QString& lastLoadedMapPath)
+void InteractiveMap::Initialize()
 {
     m_DefaultSaveFontSize = ui->saveButton->font().pointSize();
 
@@ -154,7 +154,10 @@ void InteractiveMap::Initialize(const QString& lastLoadedMapPath)
 
         menu.exec(globalPosition);
     });
+}
 
+void InteractiveMap::OnUiLoaded(const QString& lastLoadedMapPath)
+{
     if (lastLoadedMapPath.isEmpty() || LoadMap(lastLoadedMapPath) == false)
     {
         QString mapPath;
@@ -874,8 +877,6 @@ bool InteractiveMap::LoadMap(const QString& mapPath)
     m_IsLoadingMap = true;
 
     UnloadCurrentMap();
-
-    SetZoom(100);
 
     ui->mapLabel->SetImage(mapPath);
 

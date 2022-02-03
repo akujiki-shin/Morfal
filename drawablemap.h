@@ -61,12 +61,10 @@ public:
         }
     }
 
-    void SetView(QGraphicsView* view) { m_View = view; }
-
     template<typename SaveStreamType>
-    void Save(SaveStreamType& saveStream) const
+    void Save(SaveStreamType& saveStream, int version) const
     {
-        m_MapZoneGraphicsObject->Save<SaveStreamType>(saveStream);
+        m_MapZoneGraphicsObject->Save<SaveStreamType>(saveStream, version);
     }
 
     template<typename LoadStreamType>
@@ -152,7 +150,6 @@ private:
     int m_ClosestPositionOnSegmentElement{ -1 };
     QPoint m_ClosestPointOnSegment;
 
-    QGraphicsView* m_View { nullptr };
     QGraphicsPixmapItem* m_PixmapItem { nullptr };
     MapZoneGraphicsObject* m_MapZoneGraphicsObject { nullptr };
 

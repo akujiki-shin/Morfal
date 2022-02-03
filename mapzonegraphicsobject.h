@@ -3,6 +3,10 @@
 #include <QGraphicsObject>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QScrollBar>
+
 #include "saveutils.h"
 
 class QPaintEvent;
@@ -47,7 +51,7 @@ public:
     void SetMapImage(QPixmap* map) { m_MapImage = map;  prepareGeometryChange(); }
 
     template<typename SaveStreamType>
-    void Save(SaveStreamType& saveStream) const;
+    void Save(SaveStreamType& saveStream, int version) const;
 
     template<typename LoadStreamType>
     void Load(LoadStreamType& loadStream);
@@ -128,11 +132,12 @@ private:
 };
 
 template<typename SaveStreamType>
-void MapZoneGraphicsObject::Save(SaveStreamType& saveStream) const
+void MapZoneGraphicsObject::Save(SaveStreamType& saveStream, int version) const
 {
     using namespace SaveUtils;
     using ParentScope = typename ParentSaveScope<SaveStreamType>::type;
 
+    SaveUtils::Save(saveStream, "Version", version);
     SaveUtils::SaveAsByte(saveStream, "m_ColorID", m_MaxColorID);
     SaveUtils::Save(saveStream, "m_Alpha", m_Alpha);
 
@@ -151,6 +156,9 @@ void MapZoneGraphicsObject::Save(SaveStreamType& saveStream) const
     }
 
     SaveUtils::SaveParent(saveStream, "m_Paths", pathParent);
+
+    SaveUtils::Save(saveStream, "horizontalScrollBar", m_View->horizontalScrollBar()->value());
+    SaveUtils::Save(saveStream, "verticalScrollBar", m_View->verticalScrollBar()->value());
 }
 
 template<typename LoadStreamType>
@@ -162,6 +170,9 @@ void MapZoneGraphicsObject::Load(LoadStreamType& loadStream)
     using LoadScopeObject = typename LoadScopeObject<LoadStreamType>::type;
 
     Clear();
+
+    int version;
+    SaveUtils::Load(loadStream, "Version", version);
 
     SaveUtils::LoadFromByte(loadStream, "m_ColorID", m_MaxColorID);
 
@@ -183,4 +194,12 @@ void MapZoneGraphicsObject::Load(LoadStreamType& loadStream)
 
         m_Paths[id] = path;
     }
+
+    int horizontalScrollBar;
+    int verticalScrollBar;
+    SaveUtils::Load(loadStream, "horizontalScrollBar", horizontalScrollBar);
+    SaveUtils::Load(loadStream, "verticalScrollBar", verticalScrollBar);
+
+    m_View->horizontalScrollBar()->setValue(horizontalScrollBar);
+    m_View->verticalScrollBar()->setValue(verticalScrollBar);
 }

@@ -35,7 +35,8 @@ public:
         return &m_UsedData;
     }
 
-    void Initialize(const QString& lastLoadedMapPath);
+    void Initialize();
+    void OnUiLoaded(const QString& lastLoadedMapPath);
 
     void GetZoneNames(std::vector<QString>& names) const;
     void GetDataListNames(std::vector<QString>& names) const;
@@ -123,7 +124,7 @@ private:
             QList<DataId>>;
 
 private:
-    const QString m_Version{ "1.0" };
+    const int m_Version = 1;
 
     ZoneInfoData m_ZoneInfoData;
     std::map<int, QList<QString>> m_ZoneInfoCategories;
@@ -215,7 +216,9 @@ void InteractiveMap::SaveMapToStream(SaveStreamType& saveStream)
 
     SaveParent(saveStream, "mapZoneList", mapZoneListParent);
 
-    ui->mapLabel->Save(saveStream);
+    SaveUtils::Save(saveStream, "zoom", ui->mapZoomSlider->value());
+
+    ui->mapLabel->Save(saveStream, m_Version);
 }
 
 
@@ -229,7 +232,7 @@ void InteractiveMap::LoadMapFromStream(LoadStreamType& loadStream)
 
     m_ZoneInfoData.clear();
 
-    QString version;
+    int version;
     Load(loadStream, "Version", version);
 
     double kmPerPixel;
@@ -305,6 +308,10 @@ void InteractiveMap::LoadMapFromStream(LoadStreamType& loadStream)
         }
     }
 
+    int zoom;
+    Load(loadStream, "zoom", zoom);
+
+    SetZoom(zoom);
 
     ui->mapLabel->Load<LoadStreamType>(loadStream);
 

@@ -28,6 +28,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+     void showEvent(QShowEvent *event) override;
+
 private slots:
     void OnExpandServerButtonClicked();
     void OnExpandSheetButtonClicked();
@@ -70,4 +73,5 @@ private:
     CharacterSheet* m_CharacterSheet { nullptr };
     MusicPlayer* m_MusicPlayer { nullptr };
     InteractiveMap* m_InteractiveMap { nullptr };
+    bool m_IsUiLoaded { false };
 };

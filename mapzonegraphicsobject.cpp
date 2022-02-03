@@ -14,8 +14,6 @@
 #include <QStyleOptionGraphicsItem>
 #include <QWidget>
 #include <QGraphicsSceneMouseEvent>
-#include <QGraphicsScene>
-#include <QGraphicsView>
 
 #include <limits>
 
