@@ -121,14 +121,10 @@ void FightTracker::Initialize()
             ClearAllAlterations();
         });
 
-    connect(ui->reloadPlayers, &QPushButton::pressed, this, [this]()
-        {
-            ClearPlayers();
-            LoadPlayers();
-        });
+    connect(ui->loadPlayersButton, &QPushButton::pressed, this, &FightTracker::LoadPlayersButtonClicked);
 
-    connect(ui->trackerSaveMonsterButton, &QPushButton::pressed, this, &FightTracker::SaveButtonClicked);
-    connect(ui->trackerLoadMonsterButton, &QPushButton::pressed, this, &FightTracker::LoadButtonClicked);
+    connect(ui->trackerSaveMonsterButton, &QPushButton::pressed, this, &FightTracker::SaveMonsterButtonClicked);
+    connect(ui->trackerLoadMonsterButton, &QPushButton::pressed, this, &FightTracker::LoadMonsterButtonClicked);
 
     connect(ui->rollPlayerInitiativeButton, &QPushButton::pressed, this, [this]()
         {
@@ -321,7 +317,17 @@ void FightTracker::Initialize()
     AddMonstersColumnFromXml(TableType::Player); // todo ? could be enabled by a setting ?
     AddMonstersColumnFromXml(TableType::Monster);
 
-    LoadPlayers();
+    if (!m_LastLoadedPlayersPath.isEmpty())
+    {
+        for (const QString& path : m_LastLoadedPlayersPath)
+        {
+            LoadPlayers(path);
+        }
+    }
+    else
+    {
+        LoadPlayers();
+    }
 
     for (int i = 0; i < ui->monstersFightTable->columnCount(); ++i)
     {
@@ -764,6 +770,7 @@ void FightTracker::ClearPlayers()
 {
     ui->playersFightTable->selectAll();
     RemoveSelectedRow(ui->playersFightTable);
+    m_LoadedPlayersPath.clear();
 
     m_IsFightInProgress = false;
 }
@@ -1586,7 +1593,7 @@ void FightTracker::UpdateSelectedFigherCount()
     ui->selectedFighterCountLabel->setText(QString::number(selectedFighterCount));
 }
 
-void FightTracker::SaveButtonClicked()
+void FightTracker::SaveMonsterButtonClicked()
 {
     const QString defaultName = "CR_" + QString::number(ComputeCurrentChallengeRating()) + "_.json";
 
@@ -1619,7 +1626,7 @@ void FightTracker::SaveButtonClicked()
     }
 }
 
-void FightTracker::LoadButtonClicked()
+void FightTracker::LoadMonsterButtonClicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Load monsters"), "encounters", tr("monster list (*.json)"));
     if (!fileName.isEmpty())
@@ -1662,23 +1669,54 @@ void FightTracker::LoadButtonClicked()
     m_IsFightInProgress = false;
 }
 
-void FightTracker::LoadPlayers()
+void FightTracker::LoadPlayersButtonClicked()
+{
+    profileName("Load players");
+
+    ClearPlayers();
+
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Load players"), "players", tr("players (*.json)"));
+
+    for (const QString& fileName : fileNames)
+    {
+        if (!fileName.isEmpty())
+        {
+            LoadPlayers(fileName);
+        }
+    }
+}
+
+void FightTracker::LoadPlayers(const QString& filePath)
 {
     profile();
 
-    QString playersPath;
-    if (Utils::TryGetFirstFilePathIn("players", ".json", playersPath))
+    QString playersPath = filePath;
+    if (!playersPath.isEmpty() || Utils::TryGetFirstFilePathIn("players", ".json", playersPath))
     {
         QFile file(playersPath);
-        file.open(QIODevice::ReadOnly);
+        if (!file.open(QIODevice::ReadOnly))
+        {
+            QMessageBox::information(this, "Unable to open file " + playersPath, file.errorString());
+            return;
+        }
 
         QJsonDocument document(QJsonDocument::fromJson(file.readAll()));
-        QJsonArray jsonArray = document.array();
 
-        for (const QJsonValue& value : jsonArray)
+        if (document.isArray())
         {
-            AddPlayerFromJSonData(value.toObject());
+            QJsonArray jsonArray = document.array();
+
+            for (const QJsonValue& value : jsonArray)
+            {
+                AddPlayerFromJSonData(value.toObject());
+            }
         }
+        else
+        {
+            AddPlayerFromJSonData(document.object());
+        }
+
+        m_LoadedPlayersPath.append(playersPath);
 
         for (QTableWidgetItem* item : ui->playersFightTable->selectedItems())
         {

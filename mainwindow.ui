@@ -889,9 +889,9 @@ r
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="reloadPlayers">
+                  <widget class="QPushButton" name="loadPlayersButton">
                    <property name="text">
-                    <string>Reload players</string>
+                    <string>Load players</string>
                    </property>
                   </widget>
                  </item>

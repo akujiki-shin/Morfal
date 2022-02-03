@@ -57,6 +57,7 @@ private:
     QString m_LastLoadedMapPath;
     QString m_LastEncounterZoneFilterText;
     QString m_LastEncounterDataFilterText;
+    QStringList m_LastLoadedPlayersPath;
 
     std::map<QString, QString> m_MonsterSettingPaths;
     std::map<QString, QString> m_MonsterCategoryToSetting;

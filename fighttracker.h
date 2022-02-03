@@ -89,6 +89,9 @@ public:
 
     void SortFighters();
 
+    const QStringList& GetLoadedPlayersPath() { return m_LoadedPlayersPath; }
+    void SetLastLoadedPlayersPath(const QStringList& paths) { m_LastLoadedPlayersPath = paths; }
+
 private:
     enum class Columns : short
     {
@@ -147,8 +150,9 @@ private:
 
     void UpdateSelectedFigherCount();
 
-    void SaveButtonClicked();
-    void LoadButtonClicked();
+    void SaveMonsterButtonClicked();
+    void LoadMonsterButtonClicked();
+    void LoadPlayersButtonClicked();
 
     void DamageButtonClicked();
     void HealButtonClicked();
@@ -157,7 +161,7 @@ private:
     void GenerateEncounterButtonClicked();
     void UpdateEncounterComboBox();
 
-    void LoadPlayers();
+    void LoadPlayers(const QString& filePath = "");
 
     int ToIndex(ColumnsFromEnd column, TableType tableType);
 
@@ -248,4 +252,6 @@ private:
     QBrush m_CurrentFighterBrush;
 
     QString m_UserSelectedFighterName;
+    QStringList m_LoadedPlayersPath;
+    QStringList m_LastLoadedPlayersPath;
 };

@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->fightTrackerWidget->SetInfoDataItemList(&ui->jsonDataList->GetMergedCategoriesItemName());
     ui->fightTrackerWidget->SetCharacterSheet(m_CharacterSheet);
     ui->fightTrackerWidget->SetInteractiveMap(m_InteractiveMap);
+    ui->fightTrackerWidget->SetLastLoadedPlayersPath(m_LastLoadedPlayersPath);
     ui->fightTrackerWidget->SetRuleSettingsPaths(m_PlayerSettingPath, m_MonsterSettingPaths, m_MonsterCategoryToSetting, m_FightTrackerSettingPath);
     ui->fightTrackerWidget->Initialize();
 
@@ -175,6 +176,7 @@ void MainWindow::WriteSettings()
     settings.setValue("EncounterZoneFilterText", ui->encounterZoneFilterComboBox->currentText());
     settings.setValue("EncounterDataFilterText", ui->encounterDataFilterComboBox->currentText());
     settings.setValue("WantedChallengeRating", ui->wantedChallengeRating->value());
+    settings.setValue("LastLoadedPlayersPath", ui->fightTrackerWidget->GetLoadedPlayersPath());
 
     settings.endGroup();
 
@@ -223,6 +225,8 @@ void MainWindow::ReadFightTrackerSettings()
     m_LastEncounterDataFilterText = settings.value("EncounterDataFilterText").toString();
 
     ui->wantedChallengeRating->setValue(settings.value("WantedChallengeRating").toInt());
+
+    m_LastLoadedPlayersPath = settings.value("LastLoadedPlayersPath").toStringList();
 
     settings.endGroup();
 }
