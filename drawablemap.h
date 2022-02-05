@@ -9,6 +9,10 @@
 
 #include "mapzonegraphicsobject.h"
 
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
+
 class MapZoneGraphicsObject;
 
 class DrawableMap : public QGraphicsView
@@ -42,6 +46,8 @@ public:
     void SetZoomRange(int min, int max);
     void SetZoomIncrement(int increment);
 
+    void Initialize(Ui::MainWindow* ui);
+
     void SetSelected(int zoneId)
     {
         if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
@@ -54,10 +60,7 @@ public:
     {
         if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
         {
-            for (const int zoneId : selection)
-            {
-                m_MapZoneGraphicsObject->SetSelected(zoneId);
-            }
+            m_MapZoneGraphicsObject->SetSelected(selection);
         }
     }
 
@@ -128,6 +131,7 @@ private:
     void DrawMap();
     float GetScale() const;
     QPoint GetScaledMousePosition() const;
+    void ZoomExtend();
 
 private:
     QColor m_MaxColorID;

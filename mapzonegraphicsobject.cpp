@@ -577,7 +577,6 @@ void MapZoneGraphicsObject::SetSelected(const QList<int> selection)
 
         update();
     }
-
 }
 
 void MapZoneGraphicsObject::DrawMap()
@@ -772,4 +771,39 @@ QPoint MapZoneGraphicsObject::GetScaledMousePosition() const
     QPoint viewPosition = view->mapFromGlobal(globalPosition);
     QPoint scenePosition = view->mapToScene(viewPosition).toPoint();
     return mapFromScene(scenePosition).toPoint();
+}
+
+QRect MapZoneGraphicsObject::GetSelectionBoundingBox() const
+{
+    QRect boundingBox(-1, -1, -1, -1);
+
+    for (int zoneId : m_Selection)
+    {
+        const QPainterPath* path = m_Paths.at(zoneId);
+        for (int i = 0; i < path->elementCount(); ++i)
+        {
+            const QPainterPath::Element& element = path->elementAt(i);
+            if (boundingBox.left() < 0 || boundingBox.left() > element.x)
+            {
+                boundingBox.setLeft(element.x);
+            }
+
+            if (boundingBox.right() < 0 || boundingBox.right() < element.x)
+            {
+                boundingBox.setRight(element.x);
+            }
+
+            if (boundingBox.top() < 0 || boundingBox.top() < element.y)
+            {
+                boundingBox.setTop(element.y);
+            }
+
+            if (boundingBox.bottom() < 0 || boundingBox.bottom() > element.y)
+            {
+                boundingBox.setBottom(element.y);
+            }
+        }
+    }
+
+    return m_View->mapFromScene(boundingBox).boundingRect();
 }

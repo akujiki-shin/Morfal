@@ -12,8 +12,11 @@
 #include <QLineF>
 #include <QMenu>
 #include <QTransform>
+#include <QPushButton>
 
 #include <limits>
+
+#include "ui_mainwindow.h"
 
 #include "utils.h"
 
@@ -67,6 +70,11 @@ DrawableMap::~DrawableMap()
     delete m_PixmapItem;
 }
 
+void DrawableMap::Initialize(Ui::MainWindow* ui)
+{
+    connect(ui->zoomExtendButton, &QPushButton::clicked, this, &DrawableMap::ZoomExtend);
+}
+
 void DrawableMap::SetImage(const QString& imagePath)
 {
     profile();
@@ -90,6 +98,30 @@ void DrawableMap::SetZoomRange(int min, int max)
 void DrawableMap::SetZoomIncrement(int increment)
 {
     m_ZoomIncrement = increment;
+}
+
+void DrawableMap::ZoomExtend()
+{
+    SetZoom(100);
+
+    QRect boundingBox = m_MapZoneGraphicsObject->GetSelectionBoundingBox();
+
+    QPoint topLeft = mapToParent(boundingBox.topLeft());
+    QPoint bottomRight = mapToParent(boundingBox.bottomRight());
+
+    int globalWidth = bottomRight.x() - topLeft.x();
+    int globalHeight = bottomRight.y() - topLeft.y();
+
+    float widthRatio = (float)width()/(float)globalWidth;
+    float heightRatio = (float)height()/(float)globalHeight;
+
+    float zoomMarginPercent = 2.0f;
+    float zoom = (widthRatio < heightRatio) ? widthRatio : heightRatio;
+    zoom = zoom * 100.0f - zoomMarginPercent;
+
+    centerOn(mapToScene(boundingBox.center()));
+
+    SetZoom((int)zoom);
 }
 
 const QString& DrawableMap::GetMapPath() const

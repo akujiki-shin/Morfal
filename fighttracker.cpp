@@ -450,11 +450,29 @@ void FightTracker::ReadXmlSettings()
                         description += sentence;
                     }
 
+                    QFrame* alterationFrame = new QFrame(m_AlterationWidget);
+                    QHBoxLayout* alterationlLayout = new QHBoxLayout(alterationFrame);
+                    alterationlLayout->setSpacing(0);
+
                     QCheckBox* checkBox = new QCheckBox(name, this);
                     checkBox->setToolTipDuration(10000);
                     checkBox->setToolTip(description);
+
+                    QLabel* label = new QLabel(" time limit ", this);
+                    label->setAlignment(Qt::AlignRight);
+
+                    QSpinBox* spinBox = new QSpinBox(this);
+                    spinBox->setAlignment(Qt::AlignRight);
+                    spinBox->setMaximumWidth(40);
+
                     m_AlterationCheckBoxes.append(checkBox);
-                    m_AlterationWidget->layout()->addWidget(checkBox);
+                    m_AlterationDurationSpinBoxes.append(spinBox);
+
+                    alterationlLayout->addWidget(checkBox);
+                    alterationlLayout->addWidget(label);
+                    alterationlLayout->addWidget(spinBox);
+
+                    m_AlterationWidget->layout()->addWidget(alterationFrame);
                 }
                 else if (elementName == "MathScript")
                 {
@@ -919,10 +937,13 @@ void FightTracker::AddMonsterButtonClicked()
         else if (i == ToIndex(ColumnsFromEnd::Alteration, TableType::Monster))
         {
             newItem = new QTableWidgetItem("");
+            QList<AlterationInfo> alterationInfo;
             for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
             {
-                newItem->setData(Qt::UserRole+i, false);
+                alterationInfo.append({false, 0});
             }
+
+            newItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
         }
         else if (i == ToIndex(ColumnsFromEnd::Note, TableType::Monster) || i == ToIndex(ColumnsFromEnd::CountDown, TableType::Monster))
         {
@@ -1015,10 +1036,13 @@ void FightTracker::AddPlayerButtonClicked()
         else if (i == ToIndex(ColumnsFromEnd::Alteration, TableType::Player))
         {
             newItem = new QTableWidgetItem("");
+            QList<AlterationInfo> alterationInfo;
             for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
             {
-                newItem->setData(Qt::UserRole+i, false);
+                alterationInfo.append({false, 0});
             }
+
+            newItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
         }
         else if (i == ToIndex(ColumnsFromEnd::Note, TableType::Player) || i == ToIndex(ColumnsFromEnd::CountDown, TableType::Player))
         {
@@ -1263,10 +1287,14 @@ void FightTracker::SelectNextFighter()
     m_CurrentFighter = fighter;
     m_CurrentFighterTableType = sheetType;
 
-    QAbstractItemModel* model = fighter->tableWidget()->model();
-    fighter->tableWidget()->selectRow(fighter->row());
+    QTableWidget* table = fighter->tableWidget();
+    QAbstractItemModel* model = table->model();
+    table->selectRow(fighter->row());
     QModelIndex countDownIndex = model->index(fighter->row(), ToIndex(ColumnsFromEnd::CountDown, sheetType));
     model->setData(countDownIndex, qMax(countDownIndex.data().toInt() - 1, 0));
+
+    QTableWidgetItem* alterationItem = table->item(fighter->row(), ToIndex(ColumnsFromEnd::Alteration, sheetType));
+    DecrementAlterationCountDown(*alterationItem);
 
     RollDiceColumn(sheetType, fighter->row());
 
@@ -1391,10 +1419,7 @@ void FightTracker::DuplicateSelectedRow(QTableWidget* table)
             if (i == ToIndex(ColumnsFromEnd::Alteration, TableType::Monster))
             {
                 QTableWidgetItem* newItem = table->item(newRow, i);
-                for (int j = 0; j < m_AlterationCheckBoxes.count(); ++j)
-                {
-                    newItem->setData(Qt::UserRole+j, item->data(Qt::UserRole+j));
-                }
+                newItem->setData(Qt::UserRole, item->data(Qt::UserRole));
             }
         }
     }
@@ -1440,9 +1465,12 @@ void FightTracker::ClickOnAlteration(QTableWidget* table, int row, int column)
 
     m_CurrentAlterationItem = table->item(row, column);
 
-    for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
+    QList<QVariant> alterationInfoList = m_CurrentAlterationItem->data(Qt::UserRole).toList();
+    for (int i = 0; i < alterationInfoList.count(); ++i)
     {
-        m_AlterationCheckBoxes[i]->setChecked(m_CurrentAlterationItem->data(Qt::UserRole+i).toBool());
+        const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
+        m_AlterationCheckBoxes[i]->setChecked(alterationInfo.m_Checked);
+        m_AlterationDurationSpinBoxes[i]->setValue(alterationInfo.m_TimeLimit);
     }
 }
 
@@ -1453,14 +1481,35 @@ void FightTracker::ValidateAlterationWidget()
         return;
     }
 
+    QList<AlterationInfo> alterationInfo;
+    for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
+    {
+        const int timeLimit = m_AlterationDurationSpinBoxes[i]->value();
+        const bool checked = m_AlterationCheckBoxes[i]->isChecked();
+
+        alterationInfo.append({checked, timeLimit});
+    }
+
+    m_CurrentAlterationItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
+    UpdateAlterationInfo(*m_CurrentAlterationItem);
+
+    m_CurrentAlterationItem = nullptr;
+
+    m_AlterationWidget->setVisible(false);
+}
+
+void FightTracker::UpdateAlterationInfo(QTableWidgetItem& item)
+{
     QString alterations;
     QString toolTip;
 
-    for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
+    QList<QVariant> alterationInfoList = item.data(Qt::UserRole).toList();
+    for (int i = 0; i < alterationInfoList.count(); ++i)
     {
+        const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
         QCheckBox* checkBox = m_AlterationCheckBoxes[i];
-        bool checked = checkBox->isChecked();
-        m_CurrentAlterationItem->setData(Qt::UserRole+i, checked);
+        int timeLimit = alterationInfo.m_TimeLimit;
+        bool checked = alterationInfo.m_Checked;
 
         if (checked)
         {
@@ -1471,24 +1520,51 @@ void FightTracker::ValidateAlterationWidget()
             }
 
             alterations += checkBox->text();
+            if (timeLimit > 0)
+            {
+                alterations += "(" + QString::number(timeLimit) + ")";
+            }
+
             toolTip += checkBox->text() + " : " + checkBox->toolTip();
         }
     }
 
-    m_CurrentAlterationItem->setData(Qt::DisplayRole, alterations);
-    m_CurrentAlterationItem->setToolTip(toolTip);
-    m_CurrentAlterationItem = nullptr;
+    item.setData(Qt::DisplayRole, alterations);
+    item.setToolTip(toolTip);
+}
 
-    m_AlterationWidget->setVisible(false);
+void FightTracker::DecrementAlterationCountDown(QTableWidgetItem& item)
+{
+    QList<QVariant> alterationInfoList = item.data(Qt::UserRole).toList();
+    for (int i = 0; i < alterationInfoList.count(); ++i)
+    {
+        AlterationInfo alterationInfo = alterationInfoList[i].value<AlterationInfo>();
+
+        if (alterationInfo.m_Checked && alterationInfo.m_TimeLimit > 0)
+        {
+            alterationInfo.m_TimeLimit--;
+            alterationInfo.m_Checked = (alterationInfo.m_TimeLimit > 0);
+        }
+
+        alterationInfoList[i] = QVariant::fromValue(alterationInfo);
+    }
+
+    item.setData(Qt::UserRole, alterationInfoList);
+
+    UpdateAlterationInfo(item);
 }
 
 void FightTracker::ClearAlterationWidget()
 {
+    QList<AlterationInfo> alterationInfo;
     for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
     {
+        alterationInfo.append({false, 0});
         m_AlterationCheckBoxes[i]->setCheckState(Qt::CheckState::Unchecked);
-        m_CurrentAlterationItem->setData(Qt::UserRole+i, false);
+        m_AlterationDurationSpinBoxes[i]->setValue(0);
     }
+
+    m_CurrentAlterationItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
 
     m_CurrentAlterationItem->setData(Qt::DisplayRole, "");
     m_CurrentAlterationItem = nullptr;
@@ -1508,11 +1584,14 @@ void FightTracker::ClearAllAlterations()
             {
                 QTableWidgetItem* item = table->item(row, alterationColumn);
 
+                QList<AlterationInfo> alterationInfo;
                 for (int j = 0; j < m_AlterationCheckBoxes.count(); ++j)
                 {
-                    item->setData(Qt::UserRole+j, false);
+                    alterationInfo.append({false, 0});
                     item->setData(Qt::DisplayRole, "");
                 }
+
+                item->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
             }
         }
     }

@@ -154,6 +154,8 @@ void InteractiveMap::Initialize()
 
         menu.exec(globalPosition);
     });
+
+    ui->mapLabel->Initialize(ui);
 }
 
 void InteractiveMap::OnUiLoaded(const QString& lastLoadedMapPath)
@@ -365,6 +367,8 @@ void InteractiveMap::DeleteSelectedZones()
     ui->mapLabel->update();
 
     qDeleteAll(ui->mapZoneList->selectedItems());
+
+    ui->mapZoneList->clear();
 
     OnMapDirty();
 }

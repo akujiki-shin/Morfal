@@ -63,6 +63,8 @@ public:
 
     bool IsUpdatingSelection() const { return m_IsUpdatingSelection; }
 
+    QRect GetSelectionBoundingBox() const;
+
 signals:
     void OnEditChanged(bool editStarted);
     void OnEditModeChanged(MapZoneGraphicsObject::EditMode editmode);

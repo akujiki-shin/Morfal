@@ -316,6 +316,13 @@ r
                             </property>
                            </widget>
                           </item>
+                          <item>
+                           <widget class="QPushButton" name="zoomExtendButton">
+                            <property name="text">
+                             <string>Zoom</string>
+                            </property>
+                           </widget>
+                          </item>
                          </layout>
                         </item>
                         <item>

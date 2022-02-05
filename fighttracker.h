@@ -7,6 +7,7 @@
 #include "charactersheet.h"
 #include "searchablemultilistdatawiget.h"
 #include "xmlscript.h"
+#include <QMetaType>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,6 +23,13 @@ class QTableWidgetItem;
 class InteractiveMap;
 class MonsterDelegate;
 class UnderlinedRowDelegate;
+
+struct AlterationInfo
+{
+    bool m_Checked { false };
+    int m_TimeLimit { 0 };
+};
+Q_DECLARE_METATYPE(AlterationInfo);
 
 class FightTracker : public QWidget
 {
@@ -143,6 +151,8 @@ private:
     void ClickOnHealth(QTableWidget* table, int row, int column);
     void ClickOnAlteration(QTableWidget* table, int row, int column);
     void ValidateAlterationWidget();
+    void UpdateAlterationInfo(QTableWidgetItem& item);
+    void DecrementAlterationCountDown(QTableWidgetItem& item);
     void ClearAlterationWidget();
     void ClearAllAlterations();
     void MonsterSelectionChanged();
@@ -217,6 +227,7 @@ private:
     TableType m_CurrentFighterTableType;
     QList<QPair<QTableWidgetItem*, TableType>> m_Fighters;
     QList<QCheckBox*> m_AlterationCheckBoxes;
+    QList<QSpinBox*> m_AlterationDurationSpinBoxes;
     QWidget* m_AlterationWidget { nullptr };
     QTableWidgetItem* m_CurrentAlterationItem { nullptr };
 
