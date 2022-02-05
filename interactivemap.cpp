@@ -6,6 +6,7 @@
 #include <QJsonDocument>
 #include <QTimer>
 #include <QFileDialog>
+#include <QCompleter>
 
 #include "minimalscopeprofiler.h"
 #include "mapzonegraphicsobject.h"
@@ -155,7 +156,154 @@ void InteractiveMap::Initialize()
         menu.exec(globalPosition);
     });
 
+    SetupZoneListSearchableView();
+
     ui->mapLabel->Initialize(ui);
+}
+
+void InteractiveMap::SetupZoneListSearchableView()
+{
+    ui->mapZoneListView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->mapZoneListView, &QListView::customContextMenuRequested,
+            this, [this](const QPoint &pos)
+    {
+        QPoint globalPosition = ui->mapZoneListView->mapToGlobal(pos);
+
+        QMenu menu;
+        menu.addAction(tr("Delete"), this, [this]()
+        {
+            DeleteSelectedZones();
+        });
+
+        menu.exec(globalPosition);
+    });
+
+    connect(ui->clearZoneSearchBarButton, &QPushButton::clicked, this, [this]()
+    {
+        ui->zoneSearchBar->clear();
+    });
+
+    QCompleter* completer = new QCompleter(ui->mapZoneList->model(), this);
+    completer->setCaseSensitivity(Qt::CaseInsensitive);
+    completer->setFilterMode(Qt::MatchContains);
+    completer->setMaxVisibleItems(3);
+    ui->zoneSearchBar->setCompleter(completer);
+
+    using DataSortFilterProxyModel = FreezableSortFilterProxyModel<InteractiveMap>;
+    DataSortFilterProxyModel* searchFilter = new DataSortFilterProxyModel(this);
+
+    searchFilter->setSourceModel(ui->mapZoneList->model());
+    ui->mapZoneListView->setModel(searchFilter);
+    searchFilter->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
+
+    QItemSelectionModel* selectionModel = new QItemSelectionModel(searchFilter, this);
+    ui->mapZoneListView->setSelectionModel(selectionModel);
+
+    searchFilter->SetPredicate(this, &InteractiveMap::ShouldItemBeAcceptedByFilter);
+
+    ui->mapZoneListView->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
+
+    connect(ui->zoneSearchBar, &QLineEdit::textChanged, this, [this, searchFilter](const QString& text)
+    {
+        using Mode = QAbstractItemView::SelectionMode;
+
+        const bool isTextEmpty = text.isEmpty();
+        Mode mode = isTextEmpty ? Mode::ExtendedSelection : Mode::MultiSelection;
+        ui->mapZoneListView->setSelectionMode(mode);
+
+        searchFilter->setFilterFixedString(text);
+
+        ui->mapZoneList->setVisible(isTextEmpty);
+        ui->mapZoneListView->setVisible(!isTextEmpty);
+    });
+
+    ui->mapZoneListView->setVisible(false);
+
+    connect(ui->mapZoneList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            [this](const QItemSelection& selected, const QItemSelection& deselected)
+    {
+        if (m_IsLoadingMap)
+        {
+            return;
+        }
+
+        const QModelIndexList& selectedIndexes = selected.indexes();
+
+        for (int i = 0; i < selectedIndexes.count(); ++i)
+        {
+            QString itemName = selectedIndexes[i].data().toString();
+            Utils::SelectViewItemByName(*ui->mapZoneListView, itemName, true);
+        }
+
+        const QModelIndexList& deselectedIndexes = deselected.indexes();
+
+        for (int i = 0; i < deselectedIndexes.count(); ++i)
+        {
+            QString itemName = deselectedIndexes[i].data().toString();
+            Utils::SelectViewItemByName(*ui->mapZoneListView, itemName, false);
+        }
+    });
+
+    connect(ui->mapZoneListView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            [this](const QItemSelection& selected, const QItemSelection& deselected)
+    {
+        Q_UNUSED(selected);
+
+        if (m_IsLoadingMap)
+        {
+            return;
+        }
+
+        const QModelIndexList& indexList = ui->mapZoneListView->selectionModel()->selectedIndexes();
+
+        for (int i = 0; i < indexList.count(); ++i)
+        {
+            QString itemName = indexList[i].data().toString();
+            const QList<QListWidgetItem*>& matchingItems = ui->mapZoneList->findItems(itemName, Qt::MatchExactly);
+            for (QListWidgetItem* item : matchingItems)
+            {
+                if (!item->isSelected())
+                {
+                    item->setSelected(true);
+                }
+            }
+        }
+
+        for (const QItemSelectionRange& range : deselected)
+        {
+            const QModelIndexList& deselectedIndexList = range.indexes();
+
+            for (int i = 0; i < deselectedIndexList.count(); ++i)
+            {
+                QString itemName = deselectedIndexList[i].data().toString();
+                const QList<QListWidgetItem*>& matchingItems = ui->mapZoneList->findItems(itemName, Qt::MatchExactly);
+                for (QListWidgetItem* item : matchingItems)
+                {
+                    if (item->isSelected())
+                    {
+                        item->setSelected(false);
+                    }
+                }
+            }
+        }
+    });
+}
+
+bool InteractiveMap::ShouldItemBeAcceptedByFilter(const QString& itemName) const
+{
+    if (!itemName.isEmpty())
+    {
+        const QList<QListWidgetItem*>& selection = ui->mapZoneList->selectedItems();
+        for (QListWidgetItem* selectedItem : selection)
+        {
+             if (itemName == selectedItem->data(Qt::DisplayRole))
+             {
+                 return true;
+             }
+        }
+    }
+
+    return false;
 }
 
 void InteractiveMap::OnUiLoaded(const QString& lastLoadedMapPath)
@@ -334,6 +482,11 @@ void InteractiveMap::OnRenameZoneButtonClicked()
 {
     if (ui->mapZoneList->selectedItems().count() > 0)
     {
+        ui->zoneSearchBar->clear();
+
+        ui->mapZoneList->setVisible(true);
+        ui->mapZoneListView->setVisible(false);
+
         QListWidgetItem* item = ui->mapZoneList->selectedItems().first();
         item->setFlags(item->flags() | Qt::ItemIsEditable);
         ui->mapZoneList->editItem(item);
@@ -368,7 +521,10 @@ void InteractiveMap::DeleteSelectedZones()
 
     qDeleteAll(ui->mapZoneList->selectedItems());
 
-    ui->mapZoneList->clear();
+    if (m_IsLoadingMap)
+    {
+        ui->mapZoneList->clear();
+    }
 
     OnMapDirty();
 }
@@ -863,6 +1019,7 @@ void InteractiveMap::SaveMapToJSon()
 
 void InteractiveMap::UnloadCurrentMap()
 {
+    ui->zoneSearchBar->clear();
     ui->mapZoneList->selectAll();
     DeleteSelectedZones();
 

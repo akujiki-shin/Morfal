@@ -36,7 +36,10 @@ public:
     }
 
     void Initialize();
+    void SetupZoneListSearchableView();
     void OnUiLoaded(const QString& lastLoadedMapPath);
+
+    bool ShouldItemBeAcceptedByFilter(const QString& itemName) const;
 
     void GetZoneNames(std::vector<QString>& names) const;
     void GetDataListNames(std::vector<QString>& names) const;

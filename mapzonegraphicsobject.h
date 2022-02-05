@@ -39,6 +39,7 @@ public:
     //void SetImage(const QString& imagePath);
     void SetSelected(int id);
     void SetSelected(const QList<int> selection);
+    int GetSelectedZoneCount() const;
     void SetZoom(int zoom);
     void SetAlpha(int alpha);
     int GetAlpha() const;

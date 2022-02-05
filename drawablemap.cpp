@@ -102,6 +102,11 @@ void DrawableMap::SetZoomIncrement(int increment)
 
 void DrawableMap::ZoomExtend()
 {
+    if (m_MapZoneGraphicsObject->GetSelectedZoneCount() == 0)
+    {
+        return;
+    }
+
     SetZoom(100);
 
     QRect boundingBox = m_MapZoneGraphicsObject->GetSelectionBoundingBox();
@@ -109,15 +114,16 @@ void DrawableMap::ZoomExtend()
     QPoint topLeft = mapToParent(boundingBox.topLeft());
     QPoint bottomRight = mapToParent(boundingBox.bottomRight());
 
+    float zoomMargin = 200.0f;
+
     int globalWidth = bottomRight.x() - topLeft.x();
     int globalHeight = bottomRight.y() - topLeft.y();
 
-    float widthRatio = (float)width()/(float)globalWidth;
-    float heightRatio = (float)height()/(float)globalHeight;
+    float widthRatio = ((float)width() - zoomMargin)/(float)globalWidth;
+    float heightRatio = ((float)height() - zoomMargin)/(float)globalHeight;
 
-    float zoomMarginPercent = 2.0f;
     float zoom = (widthRatio < heightRatio) ? widthRatio : heightRatio;
-    zoom = zoom * 100.0f - zoomMarginPercent;
+    zoom *= 100.0f;
 
     centerOn(mapToScene(boundingBox.center()));
 

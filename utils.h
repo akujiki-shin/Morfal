@@ -8,6 +8,7 @@
 #include <functional>
 #include <QRegularExpression>
 
+class QListView;
 class QListWidget;
 class QListWidgetItem;
 class QTableWidget;
@@ -45,6 +46,8 @@ namespace Utils
     void DeleteAll(QListWidget& list);
 
     QString Verticalize(const QString& text);
+
+    void SelectViewItemByName(QListView& listView, const QString& name, bool selected);
 
     int GetSelectedRowCount(const QTableWidget& table);
 

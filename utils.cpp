@@ -305,6 +305,22 @@ namespace Utils
         return result;
     }
 
+    void SelectViewItemByName(QListView& listView, const QString& name, bool selected)
+    {
+        QItemSelectionModel::SelectionFlags selectionFlag = selected ? QItemSelectionModel::Select : QItemSelectionModel::Deselect;
+
+        QAbstractItemModel* model = listView.model();
+        const int rowCount = model->rowCount();
+        for (int i = 0; i < rowCount; ++i)
+        {
+            const QModelIndex& index = model->index(i, 0);
+            if (index.data().toString() == name && listView.selectionModel()->isSelected(index) != selected)
+            {
+                listView.selectionModel()->select(index, selectionFlag);
+            }
+        }
+    }
+
     int GetSelectedRowCount(const QTableWidget& table)
     {
         int rowCount = 0;

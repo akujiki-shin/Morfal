@@ -66,14 +66,14 @@ QRectF MapZoneGraphicsObject::boundingRect() const
     return QRectF(0, 0, width, height);
 }
 
-void MapZoneGraphicsObject::paint(QPainter *painter,
-           const QStyleOptionGraphicsItem *option,
-           QWidget *widget)
+void MapZoneGraphicsObject::paint(QPainter* painter,
+           const QStyleOptionGraphicsItem* option,
+           QWidget* widget)
 {
-    painter->setRenderHint(QPainter::Antialiasing);
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
 
-    //float scale = 1.0f;
-    //painter->scale(scale, scale);
+    painter->setRenderHint(QPainter::Antialiasing);
 
     for (auto [id, path] : m_Paths)
     {
@@ -577,6 +577,11 @@ void MapZoneGraphicsObject::SetSelected(const QList<int> selection)
 
         update();
     }
+}
+
+int MapZoneGraphicsObject::GetSelectedZoneCount() const
+{
+    return m_Selection.count();
 }
 
 void MapZoneGraphicsObject::DrawMap()
