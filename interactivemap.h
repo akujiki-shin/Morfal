@@ -138,6 +138,7 @@ private:
     Ui::MainWindow *ui { nullptr };
 
     QTimer* m_UpdateTextToSendTimer { nullptr };
+    QTimer* m_ReactToZoneListChangedTimer { nullptr };
     QString m_TextToSend;
     std::vector<QString> m_MergedJSonElements;
     std::vector<QString> m_MergedZoneInfoElements;

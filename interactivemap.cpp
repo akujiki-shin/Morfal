@@ -54,6 +54,7 @@ InteractiveMap::InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* cha
     , m_CharacterSheet(characterSheet)
 {
     m_UpdateTextToSendTimer = new QTimer(this);
+    m_ReactToZoneListChangedTimer = new QTimer(this);
 
     ui->jsonDataList->SetMainWindow(mainWindowUi);
 }
@@ -63,6 +64,7 @@ void InteractiveMap::Initialize()
     m_DefaultSaveFontSize = ui->saveButton->font().pointSize();
 
     connect(m_UpdateTextToSendTimer, &QTimer::timeout, this, &InteractiveMap::UpdateTextToSend);
+    connect(m_ReactToZoneListChangedTimer, &QTimer::timeout, this, &InteractiveMap::ZoneListSelectionChanged);
 
     SearchableMultiListDataWiget::FileDataExtractor dataExtractor = ExtractDataListFromFile;
 
@@ -97,7 +99,7 @@ void InteractiveMap::Initialize()
     connect(ui->mapZoneList->selectionModel(), &QItemSelectionModel::selectionChanged,
           this, [this](const QItemSelection& /*current*/, const QItemSelection& /*deselected*/)
                 {
-                    ZoneListSelectionChanged();
+                    m_ReactToZoneListChangedTimer->start(50);
                 });
 
     connect(ui->mapZoneInfoList->selectionModel(), &QItemSelectionModel::selectionChanged,
@@ -321,6 +323,7 @@ void InteractiveMap::OnUiLoaded(const QString& lastLoadedMapPath)
 InteractiveMap::~InteractiveMap()
 {
     delete m_UpdateTextToSendTimer;
+    delete m_ReactToZoneListChangedTimer;
 }
 
 void InteractiveMap::ComputeMergedJSon()
@@ -386,6 +389,8 @@ void InteractiveMap::DataSelectionBeingModified()
 
 void InteractiveMap::DataSelectionChanged()
 {
+    profile();
+
     if (ui->jsonDataList->GetSelection().size() > 0)
     {
         const auto& categorySelectionItemNames = ui->jsonDataList->GetCategorySelectionItemNames();
@@ -531,6 +536,8 @@ void InteractiveMap::DeleteSelectedZones()
 
 void InteractiveMap::ZoneSelectionChanged(const QList<int>& selection)
 {
+    profile();
+
     for (int i = 0; i < ui->mapZoneList->count(); ++i)
     {
         QListWidgetItem* item = ui->mapZoneList->item(i);
@@ -548,6 +555,10 @@ void InteractiveMap::OnZoneAlphaSliderValueChanged(int value)
 
 void InteractiveMap::ZoneListSelectionChanged()
 {
+    profile();
+
+    m_UpdateTextToSendTimer->stop();
+
     QList<int> selection;
 
     if (!m_IsLoadingMap)
@@ -708,6 +719,8 @@ void InteractiveMap::GenerateEncounterFromZoneInfoListSelectedItems()
 
 void InteractiveMap::RefreshZoneInfoList()
 {
+    profile();
+
     Utils::DeleteAll(*ui->mapZoneInfoList);
 
     const QString& categoryFilter = ui->zoneInfoCategoryComboBox->currentText();
@@ -791,6 +804,8 @@ void InteractiveMap::RemoveZoneInfoListSelectedItems()
 
 void InteractiveMap::ZoneInfoListSelectionChanged()
 {
+    profile();
+
     m_MergedZoneInfoElements.clear();
     m_MergedZoneInfoElements.reserve(ui->mapZoneInfoList->selectedItems().count());
 

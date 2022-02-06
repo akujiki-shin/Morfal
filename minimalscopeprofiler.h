@@ -18,14 +18,14 @@ private:
 //#define profile() MinimalScopeProfiler minimalScopeProfiler(__func__);
 #define profile(name) void();
 #else
-//#define profile() MinimalScopeProfiler minimalScopeProfiler(__func__);
-#define profile() void();
+#define profile() MinimalScopeProfiler minimalScopeProfiler(__func__);
+//#define profile() void();
 #endif
 
 #ifdef QT_DEBUG
 //#define profileName(name) MinimalScopeProfiler minimalScopeProfiler(name);
 #define profileName(name) void();
 #else
-//#define profileName(name) MinimalScopeProfiler minimalScopeProfiler(name);
-#define profileName(name) void();
+#define profileName(name) MinimalScopeProfiler minimalScopeProfiler(name);
+//#define profileName(name) void();
 #endif
