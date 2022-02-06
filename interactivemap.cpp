@@ -557,7 +557,7 @@ void InteractiveMap::ZoneListSelectionChanged()
 {
     profile();
 
-    m_UpdateTextToSendTimer->stop();
+    m_ReactToZoneListChangedTimer->stop();
 
     QList<int> selection;
 
