@@ -68,6 +68,7 @@ private slots:
     void GetZoneInfoListSelectedJsonObjects(std::vector<FightTracker::JSonCategoryInfo>& jsonObjects);
 
     void AddToSelectedZoneRequested();
+    void SetAsZoneDetailsRequested();
     void AddToFightTrackerRequested();
     void AddToFightTrackerAsAllyRequested();
 
@@ -139,6 +140,7 @@ private:
 
     QTimer* m_UpdateTextToSendTimer { nullptr };
     QTimer* m_ReactToZoneListChangedTimer { nullptr };
+    QTimer* m_ReactToZoneInfoListChangedTimer { nullptr };
     QString m_TextToSend;
     std::vector<QString> m_MergedJSonElements;
     std::vector<QString> m_MergedZoneInfoElements;

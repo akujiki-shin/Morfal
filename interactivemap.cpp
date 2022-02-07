@@ -55,6 +55,7 @@ InteractiveMap::InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* cha
 {
     m_UpdateTextToSendTimer = new QTimer(this);
     m_ReactToZoneListChangedTimer = new QTimer(this);
+    m_ReactToZoneInfoListChangedTimer = new QTimer(this);
 
     ui->jsonDataList->SetMainWindow(mainWindowUi);
 }
@@ -65,6 +66,7 @@ void InteractiveMap::Initialize()
 
     connect(m_UpdateTextToSendTimer, &QTimer::timeout, this, &InteractiveMap::UpdateTextToSend);
     connect(m_ReactToZoneListChangedTimer, &QTimer::timeout, this, &InteractiveMap::ZoneListSelectionChanged);
+    connect(m_ReactToZoneInfoListChangedTimer, &QTimer::timeout, this, &InteractiveMap::ZoneInfoListSelectionChanged);
 
     SearchableMultiListDataWiget::FileDataExtractor dataExtractor = ExtractDataListFromFile;
 
@@ -105,10 +107,11 @@ void InteractiveMap::Initialize()
     connect(ui->mapZoneInfoList->selectionModel(), &QItemSelectionModel::selectionChanged,
           this, [this](const QItemSelection& /*current*/, const QItemSelection& /*deselected*/)
                 {
-                    ZoneInfoListSelectionChanged();
+                    m_ReactToZoneInfoListChangedTimer->start(50);
                 });
 
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::AddToSelectedZoneRequested, this, &InteractiveMap::AddToSelectedZoneRequested);
+    connect(ui->jsonDataList, &SearchableMultiListDataWiget::SetAsZoneDetailsRequested, this, &InteractiveMap::SetAsZoneDetailsRequested);
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::AddToFightTrackerRequested, this, &InteractiveMap::AddToFightTrackerRequested);
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::AddToFightTrackerAsAllyRequested, this, &InteractiveMap::AddToFightTrackerAsAllyRequested);
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::GenerateEncounterRequested, this, &InteractiveMap::GenerateEncounterRequested);
@@ -324,6 +327,7 @@ InteractiveMap::~InteractiveMap()
 {
     delete m_UpdateTextToSendTimer;
     delete m_ReactToZoneListChangedTimer;
+    delete m_ReactToZoneInfoListChangedTimer;
 }
 
 void InteractiveMap::ComputeMergedJSon()
@@ -563,10 +567,28 @@ void InteractiveMap::ZoneListSelectionChanged()
 
     if (!m_IsLoadingMap)
     {
+        bool zoneDetailsShown = false;
         for (QListWidgetItem* item : ui->mapZoneList->selectedItems())
         {
             int zoneId = item->data(Qt::UserRole).toInt();
             selection.append(zoneId);
+
+            if (!zoneDetailsShown)
+            {
+                for (const DataId& selectedInfo : m_ZoneInfoData[zoneId])
+                {
+                    if (selectedInfo.m_CategoryName.startsWith("[System][Details]"))
+                    {
+                        QString detailsCategory = selectedInfo.m_CategoryName.split("]").last();
+                        const QString& data = m_UsedData[detailsCategory][selectedInfo.m_ItemName];
+                        zoneDetailsShown = true;
+
+                        m_CharacterSheet->FeedMonsterFromJson(data, detailsCategory);
+
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -595,6 +617,37 @@ void InteractiveMap::AddToSelectedZoneRequested()
 
                 m_UsedData[category][itemName] = itemData;
                 m_ZoneInfoData[zoneId].append(DataId{.m_CategoryName = category, .m_ItemName = itemName});
+            }
+        }
+    }
+
+    RefreshZoneInfoList();
+
+    OnMapDirty();
+}
+
+void InteractiveMap::SetAsZoneDetailsRequested()
+{
+    profile();
+
+    const SearchableMultiListDataWiget::Data& data = ui->jsonDataList->GetData();
+    const auto& categorySelectionItemNames = ui->jsonDataList->GetCategorySelectionItemNames();
+
+    for (QListWidgetItem* item : ui->mapZoneList->selectedItems())
+    {
+        int zoneId = item->data(Qt::UserRole).toInt();
+
+        if (!categorySelectionItemNames.empty())
+        {
+            const auto& [category, itemNames] = *categorySelectionItemNames.begin();
+            const std::map<QString, QString>& categoryMap = data.at(category);
+            if (!itemNames.empty())
+            {
+                const QString& itemName = itemNames[0];
+                const QString& itemData = categoryMap.at(itemName);
+
+                m_UsedData[category][itemName] = itemData;
+                m_ZoneInfoData[zoneId].append(DataId{.m_CategoryName = "[System][Details]" + category, .m_ItemName = itemName});
             }
         }
     }
@@ -805,6 +858,8 @@ void InteractiveMap::RemoveZoneInfoListSelectedItems()
 void InteractiveMap::ZoneInfoListSelectionChanged()
 {
     profile();
+
+    m_ReactToZoneInfoListChangedTimer->stop();
 
     m_MergedZoneInfoElements.clear();
     m_MergedZoneInfoElements.reserve(ui->mapZoneInfoList->selectedItems().count());

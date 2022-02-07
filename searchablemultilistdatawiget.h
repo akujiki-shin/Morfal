@@ -40,6 +40,7 @@ signals:
     void SectionItemClicked(const QString& categoryName, const QString& itemName);
     void SectionItemDoubleClicked(const QString& categoryName, const QString& itemName);
     void AddToSelectedZoneRequested();
+    void SetAsZoneDetailsRequested();
     void AddToFightTrackerRequested();
     void AddToFightTrackerAsAllyRequested();
     void GenerateEncounterRequested();
@@ -193,6 +194,11 @@ void SearchableMultiListDataWiget::ParseFile(QDirIterator& fileIterator, const Q
             menu.addAction(tr("Add to selected zone"), this, [this]()
             {
                 emit AddToSelectedZoneRequested();
+            });
+
+            menu.addAction(tr("Set as selected zone details"), this, [this]()
+            {
+                emit SetAsZoneDetailsRequested();
             });
 
             menu.addAction(tr("Generate encounter"), this, [this]()
