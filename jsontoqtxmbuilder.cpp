@@ -18,20 +18,28 @@
 #include "JsonRetrievers/JsonRetrieverHelper.h"
 #include "JsonRetrievers/JsonStringRetriever.h"
 
+#include "ui_mainwindow.h"
+
 #include "utils.h"
 
-JsonToQtXmBuilder::JsonToQtXmBuilder(QWidget *parent)
+QList<JsonToQtXmBuilder*> JsonToQtXmBuilder::m_SubListsDetails;
+
+JsonToQtXmBuilder::JsonToQtXmBuilder(Ui::MainWindow* mainWindowUi, QWidget *parent)
     : super(parent)
+    , ui(mainWindowUi)
 {
     setLayout(new QVBoxLayout());
     setMaximumWidth(350);
 }
 
-bool JsonToQtXmBuilder::BuildFromXml(const QString& xmlPath)
+bool JsonToQtXmBuilder::BuildFromXml(const QString& xmlPath, const QString& xmlFileName)
 {
     bool success = false;
 
-    QFile file(xmlPath);
+    m_XmlPath = xmlPath;
+    const QString& fullPath = xmlPath + "/" + xmlFileName + ".xml";
+
+    QFile file(fullPath);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         QXmlStreamReader reader(&file);
@@ -97,14 +105,9 @@ bool JsonToQtXmBuilder::ReadXml(QXmlStreamReader& reader)
                     BuildTextArea(reader);
                 }
                 break;
-                case XmlTypes::spells:
+                case XmlTypes::list:
                 {
-                    BuildSpells(reader);
-                }
-                break;
-                case XmlTypes::actionsAndItems:
-                {
-                    BuildActionsAndItems(reader);
+                    BuildList(reader);
                 }
                 break;
                 case XmlTypes::stat:
@@ -392,23 +395,47 @@ QFrame* JsonToQtXmBuilder::GetOrCreateStatsFrame()
     return m_StatsFrame;
 }
 
-void JsonToQtXmBuilder::BuildSubList(QXmlStreamReader& reader, const QString& name, const SignalFunction& signal)
+void JsonToQtXmBuilder::BuildList(QXmlStreamReader& reader)
 {
-    QLabel* nameLabel = new QLabel(name, this);
+    const QString& listName = reader.attributes().value("ListName").toString();
+    const QString& xmlBuilderName = reader.attributes().value("XmlBuilderName").toString();
+
+    m_HasSubList = true;
+
+    JsonToQtXmBuilder* currentListDetails = new JsonToQtXmBuilder(ui, parentWidget());
+    currentListDetails->BuildFromXml(m_XmlPath, xmlBuilderName);
+    currentListDetails->setMinimumWidth(0);
+    currentListDetails->setMaximumSize(0, 0);
+    ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(currentListDetails);
+
+    m_SubListsDetails.append(currentListDetails);
+
+    QLabel* nameLabel = new QLabel(listName, this);
     QListWidget* list = new QListWidget(this);
     list->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
 
-    connect(list, &QListWidget::itemSelectionChanged, this, [this, signal, list]()
+    connect(list, &QListWidget::itemSelectionChanged, this, [currentListDetails, list]()
     {
+        QJsonObject jsonObject;
+
         if (list->selectedItems().count() > 0)
         {
             QListWidgetItem* item = list->selectedItems().front();
-            emit (this->*signal)(item->data(Qt::UserRole).toJsonObject());
+            jsonObject = item->data(Qt::UserRole).toJsonObject();
         }
-        else
+
+        for (JsonToQtXmBuilder* listDetails : m_SubListsDetails)
         {
-            QJsonObject emptyObject;
-            emit (this->*signal)(emptyObject);
+            if (listDetails != currentListDetails)
+            {
+                listDetails->setMaximumSize(0, 0);
+            }
+            else
+            {
+                static const int maxSize = 30000;
+                listDetails->setMaximumSize(maxSize, maxSize);
+                listDetails->FeedFromJson(jsonObject);
+            }
         }
     });
 
@@ -477,16 +504,6 @@ void JsonToQtXmBuilder::BuildSubList(QXmlStreamReader& reader, const QString& na
     };
 
     m_FeedFunctions.append(feedFunction);
-}
-
-void JsonToQtXmBuilder::BuildSpells(QXmlStreamReader& reader)
-{
-    BuildSubList(reader, tr("Spells"), &JsonToQtXmBuilder::SpellSelectionChanged);
-}
-
-void JsonToQtXmBuilder::BuildActionsAndItems(QXmlStreamReader& reader)
-{
-    BuildSubList(reader, tr("Actions & Items"), &JsonToQtXmBuilder::ItemAndActionSelectionChanged);
 }
 
 void JsonToQtXmBuilder::RegisterScript(QXmlStreamReader& reader)

@@ -33,55 +33,29 @@ void CharacterSheet::BuildFromPaths(const std::map<QString, QString>& paths)
 {
     for (const auto& [dataFileName, path] : paths)
     {
-        MonsterSheet& sheet = m_MonsterSheets[dataFileName];
+        JsonToQtXmBuilder*& sheet = m_Sheets[dataFileName];
         m_CurrentMonsterCategory = dataFileName;
 
-        sheet.m_MainInformation = new JsonToQtXmBuilder(ui->characterSheetFrame);
-        sheet.m_Spells = new JsonToQtXmBuilder(ui->characterSheetFrame);
-        sheet.m_ItemAndActions = new JsonToQtXmBuilder(ui->characterSheetFrame);
+        sheet = new JsonToQtXmBuilder(ui, ui->characterSheetFrame);
 
-        ui->characterSheetScrollAreaContent->layout()->addWidget(sheet.m_MainInformation);
-        ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_Spells);
-        ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_ItemAndActions);
+        ui->characterSheetScrollAreaContent->layout()->addWidget(sheet);
 
-        sheet.m_MainInformation->BuildFromXml(path + "/main.xml");
-        sheet.m_Spells->BuildFromXml(path + "/spellsDetails.xml");
-        sheet.m_ItemAndActions->BuildFromXml(path + "/itemsAndActionsDetails.xml");
+        sheet->BuildFromXml(path, "main");
 
-        sheet.m_MainInformation->setMinimumWidth(0);
-        sheet.m_Spells->setMinimumWidth(0);
-        sheet.m_ItemAndActions->setMinimumWidth(0);
+        sheet->setMinimumWidth(0);
 
         QList<QWidget*>& monsterPartsToHide = m_SheetPartsToHide[dataFileName];
-        monsterPartsToHide.append(sheet.m_MainInformation);
-        monsterPartsToHide.append(sheet.m_Spells);
-        monsterPartsToHide.append(sheet.m_ItemAndActions);
+        monsterPartsToHide.append(sheet);
 
         QList<QWidget*>& monsterPartsToShow = m_SheetPartsToShow[dataFileName];
-        monsterPartsToShow.append(sheet.m_MainInformation);
-        monsterPartsToShow.append(sheet.m_ItemAndActions);
+        monsterPartsToShow.append(sheet);
 
-        connect(sheet.m_MainInformation, &JsonToQtXmBuilder::SpellSelectionChanged,
-                this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
-        {
-            profileName("Show spell sheet part")
-            ShowSheetPart(spells);
-            spells->FeedFromJson(object);
-            HideSheetPart(itemsAndActions);
-        });
+        ConnectDice(sheet);
+    }
 
-        connect(sheet.m_MainInformation, &JsonToQtXmBuilder::ItemAndActionSelectionChanged,
-                this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
-        {
-            profileName("Show items & actions sheet part")
-            ShowSheetPart(itemsAndActions);
-            itemsAndActions->FeedFromJson(object);
-            HideSheetPart(spells);
-        });
-
-        ConnectDice(sheet.m_MainInformation);
-        ConnectDice(sheet.m_Spells);
-        ConnectDice(sheet.m_ItemAndActions);
+    for (JsonToQtXmBuilder* subListDetails : JsonToQtXmBuilder::m_SubListsDetails)
+    {
+        ConnectDice(subListDetails);
     }
 }
 
@@ -109,20 +83,20 @@ void CharacterSheet::FeedMonsterFromJson(const QJsonObject& jsonData, const QStr
     HideAllSheets();
     ShowSheet(category);
 
-    auto sheetIterator = m_MonsterSheets.find(category);
-    bool foundCategory = (sheetIterator != m_MonsterSheets.end());
-    MonsterSheet& sheet = foundCategory ? sheetIterator->second : m_MonsterSheets.begin()->second;
-    sheet.m_MainInformation->FeedFromJson(jsonData);
+    auto sheetIterator = m_Sheets.find(category);
+    bool foundCategory = (sheetIterator != m_Sheets.end());
+    JsonToQtXmBuilder* sheet = foundCategory ? sheetIterator->second : m_Sheets.begin()->second;
+    sheet->FeedFromJson(jsonData);
     m_CurrentMonsterCategory = category;
 
-    if (sheet.m_Spells->layout()->isEmpty() && sheet.m_ItemAndActions->layout()->isEmpty())
-    {
-        ui->characterSpellsAndActionsDetails->setMaximumHeight(0);
-    }
-    else
+    if (sheet->HasSubList())
     {
         static const int maxSize = 30000;
         ui->characterSpellsAndActionsDetails->setMaximumHeight(maxSize);
+    }
+    else
+    {
+        ui->characterSpellsAndActionsDetails->setMaximumHeight(0);
     }
 }
 
@@ -138,10 +112,10 @@ void CharacterSheet::FeedMonsterFromJson(const QString& jsonString, const QStrin
 void CharacterSheet::ClearMonster()
 {
     QJsonObject empty;
-    auto iterator = m_MonsterSheets.find(m_CurrentMonsterCategory);
-    if (iterator != m_MonsterSheets.end())
+    auto iterator = m_Sheets.find(m_CurrentMonsterCategory);
+    if (iterator != m_Sheets.end())
     {
-        iterator->second.m_MainInformation->FeedFromJson(empty);
+        iterator->second->FeedFromJson(empty);
     }
 }
 

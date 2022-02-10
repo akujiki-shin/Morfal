@@ -49,13 +49,6 @@ private:
 
     QStringList m_DiceExpressionReceivers;
 
-    struct MonsterSheet
-    {
-        JsonToQtXmBuilder* m_MainInformation;
-        JsonToQtXmBuilder* m_Spells;
-        JsonToQtXmBuilder* m_ItemAndActions;
-    };
-
-    std::map<QString, MonsterSheet> m_MonsterSheets;
+    std::map<QString, JsonToQtXmBuilder*> m_Sheets;
     QString m_CurrentMonsterCategory{};
 };

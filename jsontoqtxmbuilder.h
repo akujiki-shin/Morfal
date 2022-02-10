@@ -23,6 +23,10 @@ class JSonMapRetriever;
 class JSonArrayRetriever;
 class JSonConditionRetriever;
 
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
+
 class JsonToQtXmBuilder : public QWidget
 {
 private:
@@ -38,29 +42,30 @@ public:
     {
         title,
         label,
-        spells,
-        actionsAndItems,
         stat,
         separatorLine,
         textArea,
-        MathScript
+        MathScript,
+        list
     };
 
     Q_ENUM(XmlTypes)
 
 signals:
-    void SpellSelectionChanged(const QJsonObject& object);
-    void ItemAndActionSelectionChanged(const QJsonObject& object);
     void DiceExpressionSelected(const QString& diceExpression, bool replaceCustomDice);
     void DiceExpressionSentToReceiver(const QString& receiverName, const QString& diceExpression, DiceOperation diceOperation);
 
 public:
-    explicit JsonToQtXmBuilder(QWidget *parent = nullptr);
+    explicit JsonToQtXmBuilder(Ui::MainWindow* mainWindowUi, QWidget *parent = nullptr);
 
-    bool BuildFromXml(const QString& xmlFileName);
+    bool BuildFromXml(const QString& xmlPath, const QString& xmlFileName);
     void FeedFromJson(const QJsonObject& jsonData);
 
     void SetDiceReveivers(const QStringList* diceExpressionReceivers);
+
+    inline bool HasSubList() const { return m_HasSubList; }
+
+    static QList<JsonToQtXmBuilder*> m_SubListsDetails;
 
 private:
     bool ReadXml(QXmlStreamReader& reader);
@@ -70,9 +75,7 @@ private:
     void BuildSeparatorLine(QXmlStreamReader& reader);
     void BuildTextArea(QXmlStreamReader& reader);
 
-    void BuildSubList(QXmlStreamReader& reader, const QString& name, const SignalFunction& signal);
-    void BuildSpells(QXmlStreamReader& reader);
-    void BuildActionsAndItems(QXmlStreamReader& reader);
+    void BuildList(QXmlStreamReader& reader);
 
     void RegisterScript(QXmlStreamReader& reader);
 
@@ -86,6 +89,7 @@ private:
 private:
     QList<FeedFunction> m_FeedFunctions;
     QList<FeedFunction> m_FeedScriptFunctions;
+
     QMap<QString, QJSValue> m_ScriptResult;
     QJSEngine m_JSEngine;
 
@@ -95,4 +99,8 @@ private:
     QFrame* m_SubListsFrame { nullptr };
     QFrame* m_StatsFrame { nullptr };
     const QStringList* m_DiceExpressionReceivers { nullptr };
+
+    QString m_XmlPath;
+    bool m_HasSubList { false };
+    Ui::MainWindow* ui { nullptr };
 };
