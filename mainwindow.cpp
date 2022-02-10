@@ -3,6 +3,8 @@
 #include <QSettings>
 #include <QString>
 #include <QPropertyAnimation>
+#include <QXmlStreamReader>
+#include <QFile>
 
 #include "serverdatasender.h"
 #include "charactersheet.h"
@@ -30,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     ReadMapSettings();
     ReadFightTrackerSettings();
 
-    m_CharacterSheet = new CharacterSheet(ui, m_PlayerSettingPath, m_MonsterSettingPaths, this);
+    m_CharacterSheet = new CharacterSheet(ui, m_PlayerSettingPaths, m_MonsterSettingPaths, this);
 
     m_MusicPlayer = new MusicPlayer(ui, this);
     m_ServerDataSender = new ServerDataSender(ui, this);
@@ -42,7 +44,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->fightTrackerWidget->SetCharacterSheet(m_CharacterSheet);
     ui->fightTrackerWidget->SetInteractiveMap(m_InteractiveMap);
     ui->fightTrackerWidget->SetLastLoadedPlayersPath(m_LastLoadedPlayersPath);
-    ui->fightTrackerWidget->SetRuleSettingsPaths(m_PlayerSettingPath, m_MonsterSettingPaths, m_MonsterCategoryToSetting, m_FightTrackerSettingPath);
+    ui->fightTrackerWidget->SetRuleSettingsPaths(m_PlayerSettingPaths,
+                                                 m_PlayerCategoryToSetting,
+                                                 m_MonsterSettingPaths,
+                                                 m_MonsterCategoryToSetting,
+                                                 m_FightTrackerSettingPath);
     ui->fightTrackerWidget->Initialize();
 
     ui->fightTrackerWidget->SetFiltersCurrentText(m_LastEncounterDataFilterText, m_LastEncounterZoneFilterText);
@@ -315,7 +321,11 @@ void MainWindow::RetrieveRuleSettingsPaths()
                     const QString& elementName = reader.name().toString();
                     if (elementName == "PlayerSetting")
                     {
-                        m_PlayerSettingPath = prefix + reader.attributes().value("SettingFolder").toString() + "/jsonToQtXml";
+                        const QString dataFile = reader.attributes().value("DataFileName").toString();
+                        const QString settingFolder = reader.attributes().value("SettingFolder").toString();
+
+                        m_PlayerSettingPaths[dataFile] = prefix + settingFolder + "/jsonToQtXml";
+                        m_PlayerCategoryToSetting[dataFile] = settingFolder;
                     }
                     else if (elementName == "MonsterSetting")
                     {

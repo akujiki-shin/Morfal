@@ -61,7 +61,7 @@ public:
     void AddFromJSonData(const std::vector<JSonCategoryInfoPtr>& jsonData, TableType tableType);
     void AddFromJSonData(const std::vector<JSonCategoryInfo>& jsonData, TableType tableType);
     void AddFromJSonData(const JSonCategoryInfo& jsonData, TableType tableType);
-    void AddPlayerFromJSonData(const QJsonObject& jsonData);
+    void AddPlayerFromJSonData(const QJsonObject& jsonData, const QString& category);
 
     void GenerateEncounterFromJSonData(const std::vector<JSonCategoryInfo>& jsonObjects);
     void GenerateEncounterFromJSonData(const std::vector<JSonCategoryInfoPtr>& jsonObjects);
@@ -85,9 +85,14 @@ public:
 
     void SetInteractiveMap(InteractiveMap* interactiveMap);
 
-    inline void SetRuleSettingsPaths(const QString& playerSettingPath, const std::map<QString, QString>& monsterSettingPath, const std::map<QString, QString>& monsterCategoryToSetting, const QString& fightTrackerSettingPath)
+    inline void SetRuleSettingsPaths(const std::map<QString, QString>& playerSettingPath,
+                                     const std::map<QString, QString>& playerCategoryToSetting,
+                                     const std::map<QString, QString>& monsterSettingPath,
+                                     const std::map<QString, QString>& monsterCategoryToSetting,
+                                     const QString& fightTrackerSettingPath)
     {
-        m_PlayerSettingPath = playerSettingPath;
+        m_PlayerSettingPath = &playerSettingPath;
+        m_PlayerCategoryToSetting = &playerCategoryToSetting;
         m_MonsterSettingPath = &monsterSettingPath;
         m_MonsterCategoryToSetting = &monsterCategoryToSetting;
         m_FightTrackerSettingPath = fightTrackerSettingPath;
@@ -177,7 +182,7 @@ private:
 
     void ReadXmlSettings();
     void ReadXmlScipts();
-    void AddMonstersColumnFromXml(TableType tableType);
+    void AddColumnFromXml(TableType tableType, const std::map<QString, QString>& settingPaths);
     void AddColumnFromXml(QTableWidget* table, TableType tableType, const QString& sheetType, const QString& xml);
     void ReadXml(QXmlStreamReader& reader, QTableWidget* table, TableType tableType, const QString& sheetType);
 
@@ -247,7 +252,8 @@ private:
     QString m_ChallengeRatingVarName{ "" };
     QMap<QString, QList<FeedFunction>> m_CumulatedFeedScriptFunctionsMap;
 
-    QString m_PlayerSettingPath;
+    const std::map<QString, QString>* m_PlayerSettingPath;
+    const std::map<QString, QString>* m_PlayerCategoryToSetting;
     const std::map<QString, QString>* m_MonsterSettingPath;
     const std::map<QString, QString>* m_MonsterCategoryToSetting;
     QString m_FightTrackerSettingPath;
@@ -265,4 +271,5 @@ private:
     QString m_UserSelectedFighterName;
     QStringList m_LoadedPlayersPath;
     QStringList m_LastLoadedPlayersPath;
+    QStringList m_PlayerSheetType;
 };

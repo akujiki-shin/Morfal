@@ -29,6 +29,7 @@
 #include "interactivemap.h"
 
 #include "JsonRetrievers/JsonRetrieverHelper.h"
+#include "JsonRetrievers/JsonRetriever.h"
 
 FightTracker::FightTracker(QWidget *parent)
     : super(parent)
@@ -128,7 +129,10 @@ void FightTracker::Initialize()
 
     connect(ui->rollPlayerInitiativeButton, &QPushButton::pressed, this, [this]()
         {
-            RollInitiative(ui->playersFightTable, TableType::Player, "player");
+            for (const QString& sheetType : m_PlayerSheetType)
+            {
+                RollInitiative(ui->playersFightTable, TableType::Player, sheetType);
+            }
         });
 
     connect(ui->monstersFightTable, &QTableWidget::cellChanged, this, [this](int row, int column)
@@ -312,10 +316,9 @@ void FightTracker::Initialize()
     ReadXmlSettings();
     ReadXmlScipts();
 
-    AddColumnFromXml(ui->playersFightTable, TableType::Player, "player", m_PlayerSettingPath + "/fightTrackerPlayerColumns.xml");
-
-    AddMonstersColumnFromXml(TableType::Player); // todo ? could be enabled by a setting ?
-    AddMonstersColumnFromXml(TableType::Monster);
+    AddColumnFromXml(TableType::Player, *m_PlayerSettingPath);
+    AddColumnFromXml(TableType::Player, *m_MonsterSettingPath);
+    AddColumnFromXml(TableType::Monster, *m_MonsterSettingPath);
 
     if (!m_LastLoadedPlayersPath.isEmpty())
     {
@@ -536,11 +539,23 @@ void FightTracker::ReadXmlScipts()
     }
 }
 
-void FightTracker::AddMonstersColumnFromXml(TableType tableType)
+void FightTracker::AddColumnFromXml(TableType tableType, const std::map<QString, QString>& settingPaths)
 {
-    QTableWidget* table = (tableType == TableType::Monster) ? ui->monstersFightTable : ui->playersFightTable;
+    QTableWidget* table;
+    QPushButton* initiativeButton;
 
-    for (const auto& [category, path] : *m_MonsterSettingPath)
+    if (tableType == TableType::Monster)
+    {
+        table = ui->monstersFightTable;
+        initiativeButton = ui->rollMonstersInitiativeButton;
+    }
+    else
+    {
+        table = ui->playersFightTable;
+        initiativeButton = ui->rollPlayerInitiativeButton;
+    }
+
+    for (const auto& [category, path] : settingPaths)
     {
         const QString& sheetType = category;
 
@@ -789,6 +804,7 @@ void FightTracker::ClearPlayers()
     ui->playersFightTable->selectAll();
     RemoveSelectedRow(ui->playersFightTable);
     m_LoadedPlayersPath.clear();
+    m_PlayerSheetType.clear();
 
     m_IsFightInProgress = false;
 }
@@ -897,15 +913,15 @@ void FightTracker::FeedFromJSonData(const QJsonObject& jsonData, TableType table
     m_IsFeedingTableItemStack--;
 }
 
-void FightTracker::AddPlayerFromJSonData(const QJsonObject& jsonData)
+void FightTracker::AddPlayerFromJSonData(const QJsonObject& jsonData, const QString& category)
 {
     AddPlayerButtonClicked();
     int row = ui->playersFightTable->rowCount() - 1;
 
     QTableWidgetItem* jsonHolderItem = ui->playersFightTable->item(row, ms_JSonObjectRow);
-    jsonHolderItem->setData(Qt::UserRole+1, "player");
+    jsonHolderItem->setData(Qt::UserRole+1, category);
 
-    FeedFromJSonData(jsonData, TableType::Player, "player", row);
+    FeedFromJSonData(jsonData, TableType::Player, category, row);
 }
 
 void FightTracker::SetRound(int round)
@@ -1637,7 +1653,7 @@ void FightTracker::PlayerSelectionChanged()
 
     if (ui->playersFightTable->selectedItems().count() == 0)
     {
-        m_CharacterSheet->ClearPlayer();
+        m_CharacterSheet->ClearMonster();
     }
     else
     {
@@ -1647,14 +1663,8 @@ void FightTracker::PlayerSelectionChanged()
         if (item->data(Qt::UserRole).canConvert((QMetaType)QMetaType::QJsonObject))
         {
             const QString& category = item->data(Qt::UserRole+1).toString();
-            if (category == "player")
-            {
-                m_CharacterSheet->FeedPlayerFromJson(item->data(Qt::UserRole).toJsonObject());
-            }
-            else
-            {
-                m_CharacterSheet->FeedMonsterFromJson(item->data(Qt::UserRole).toJsonObject(), category);
-            }
+
+            m_CharacterSheet->FeedMonsterFromJson(item->data(Qt::UserRole).toJsonObject(), category);
 
             m_UserSelectedFighterName = "";
 
@@ -1779,6 +1789,7 @@ void FightTracker::LoadPlayers(const QString& filePath)
             return;
         }
 
+        const QString& fileName =  Utils::CleanFileName(file.fileName());
         QJsonDocument document(QJsonDocument::fromJson(file.readAll()));
 
         if (document.isArray())
@@ -1787,15 +1798,16 @@ void FightTracker::LoadPlayers(const QString& filePath)
 
             for (const QJsonValue& value : jsonArray)
             {
-                AddPlayerFromJSonData(value.toObject());
+                AddPlayerFromJSonData(value.toObject(), fileName);
             }
         }
         else
         {
-            AddPlayerFromJSonData(document.object());
+            AddPlayerFromJSonData(document.object(), fileName);
         }
 
         m_LoadedPlayersPath.append(playersPath);
+        m_PlayerSheetType.append(fileName);
 
         for (QTableWidgetItem* item : ui->playersFightTable->selectedItems())
         {

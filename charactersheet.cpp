@@ -6,111 +6,83 @@
 #include <QPropertyAnimation>
 
 #include "minimalscopeprofiler.h"
+#include "jsontoqtxmbuilder.h"
 
-CharacterSheet::CharacterSheet(Ui::MainWindow* mainWindowUi, const QString& playerSettingPath, const std::map<QString, QString>& monsterSettingPaths, QObject *parent)
+CharacterSheet::CharacterSheet(Ui::MainWindow* mainWindowUi,
+                               const std::map<QString, QString>& playerSettingPaths,
+                               const std::map<QString, QString>& monsterSettingPaths,
+                               QObject *parent)
     : super(parent)
     , ui(mainWindowUi)
-    , m_PlayerSettingPath(playerSettingPath)
 {
-    QList<QWidget*>& playerPartsToHide = m_SheetPartsToHide["player"];
-    playerPartsToHide.append(ui->playerJsonToQtXmBuilder);
-    playerPartsToHide.append(ui->spellsPlayerJsonToQtXmBuilder);
-    playerPartsToHide.append(ui->itemsAndActionsPlayerJsonToQtXmBuilder);
+    profileName("Build character sheet from xml");
 
-    QList<QWidget*>& playerPartsToShow = m_SheetPartsToShow["player"];
-    playerPartsToShow.append(ui->playerJsonToQtXmBuilder);
-    playerPartsToShow.append(ui->itemsAndActionsPlayerJsonToQtXmBuilder);
-
-    {
-        profileName("Build character sheet from xml");
-
-        for (const auto& [dataFileName, path] : monsterSettingPaths)
-        {
-            MonsterSheet& sheet = m_MonsterSheets[dataFileName];
-            m_CurrentMonsterCategory = dataFileName;
-
-            sheet.m_MainInformation = new JsonToQtXmBuilder(ui->characterSheetFrame);
-            sheet.m_Spells = new JsonToQtXmBuilder(ui->characterSheetFrame);
-            sheet.m_ItemAndActions = new JsonToQtXmBuilder(ui->characterSheetFrame);
-
-            ui->characterSheetScrollAreaContent->layout()->addWidget(sheet.m_MainInformation);
-            ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_Spells);
-            ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_ItemAndActions);
-
-            sheet.m_MainInformation->BuildFromXml(path + "/monsterDetails.xml");
-            sheet.m_Spells->BuildFromXml(path + "/spellsDetails.xml");
-            sheet.m_ItemAndActions->BuildFromXml(path + "/itemsAndActionsDetails.xml");
-
-            sheet.m_MainInformation->setMinimumWidth(0);
-            sheet.m_Spells->setMinimumWidth(0);
-            sheet.m_ItemAndActions->setMinimumWidth(0);
-
-            QList<QWidget*>& monsterPartsToHide = m_SheetPartsToHide[dataFileName];
-            monsterPartsToHide.append(sheet.m_MainInformation);
-            monsterPartsToHide.append(sheet.m_Spells);
-            monsterPartsToHide.append(sheet.m_ItemAndActions);
-
-            QList<QWidget*>& monsterPartsToShow = m_SheetPartsToShow[dataFileName];
-            monsterPartsToShow.append(sheet.m_MainInformation);
-            monsterPartsToShow.append(sheet.m_ItemAndActions);
-
-            connect(sheet.m_MainInformation, &JsonToQtXmBuilder::SpellSelectionChanged,
-                    this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
-            {
-                profileName("Show spell sheet part")
-                ShowSheetPart(spells);
-                spells->FeedFromJson(object);
-                HideSheetPart(itemsAndActions);
-            });
-
-            connect(sheet.m_MainInformation, &JsonToQtXmBuilder::ItemAndActionSelectionChanged,
-                    this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
-            {
-                profileName("Show items & actions sheet part")
-                ShowSheetPart(itemsAndActions);
-                itemsAndActions->FeedFromJson(object);
-                HideSheetPart(spells);
-            });
-
-            ConnectDice(sheet.m_MainInformation);
-            ConnectDice(sheet.m_Spells);
-            ConnectDice(sheet.m_ItemAndActions);
-        }
-
-        ui->playerJsonToQtXmBuilder->BuildFromXml(m_PlayerSettingPath + "/playerDetails.xml");
-        ui->spellsPlayerJsonToQtXmBuilder->BuildFromXml(m_PlayerSettingPath + "/spellsPlayerDetails.xml");
-        ui->itemsAndActionsPlayerJsonToQtXmBuilder->BuildFromXml(m_PlayerSettingPath + "/itemsAndActionsPlayerDetails.xml");
-    }
-
-    ui->playerJsonToQtXmBuilder->setMinimumWidth(0);
-    ui->spellsPlayerJsonToQtXmBuilder->setMinimumWidth(0);
-    ui->itemsAndActionsPlayerJsonToQtXmBuilder->setMinimumWidth(0);
-
-    ConnectDice(ui->playerJsonToQtXmBuilder);
-    ConnectDice(ui->spellsPlayerJsonToQtXmBuilder);
-    ConnectDice(ui->itemsAndActionsPlayerJsonToQtXmBuilder);
-
-    connect(ui->playerJsonToQtXmBuilder, &JsonToQtXmBuilder::SpellSelectionChanged,
-            this, [this](const QJsonObject& object)
-    {
-        profileName("Show spell sheet part")
-        ShowSheetPart(ui->spellsPlayerJsonToQtXmBuilder);
-        ui->spellsPlayerJsonToQtXmBuilder->FeedFromJson(object);
-        HideSheetPart(ui->itemsAndActionsPlayerJsonToQtXmBuilder);
-    });
-
-    connect(ui->playerJsonToQtXmBuilder, &JsonToQtXmBuilder::ItemAndActionSelectionChanged,
-            this, [this](const QJsonObject& object)
-    {
-
-        profileName("Show items & actions sheet part")
-        ShowSheetPart(ui->itemsAndActionsPlayerJsonToQtXmBuilder);
-        ui->itemsAndActionsPlayerJsonToQtXmBuilder->FeedFromJson(object);
-        HideSheetPart(ui->spellsPlayerJsonToQtXmBuilder);
-    });
+    BuildFromPaths(monsterSettingPaths);
+    BuildFromPaths(playerSettingPaths);
 
     HideAllSheets();
-    ShowSheet("player");
+
+    if (playerSettingPaths.size() > 0)
+    {
+        const QString& firstCategory = playerSettingPaths.begin()->first;
+        ShowSheet(firstCategory);
+    }
+}
+
+void CharacterSheet::BuildFromPaths(const std::map<QString, QString>& paths)
+{
+    for (const auto& [dataFileName, path] : paths)
+    {
+        MonsterSheet& sheet = m_MonsterSheets[dataFileName];
+        m_CurrentMonsterCategory = dataFileName;
+
+        sheet.m_MainInformation = new JsonToQtXmBuilder(ui->characterSheetFrame);
+        sheet.m_Spells = new JsonToQtXmBuilder(ui->characterSheetFrame);
+        sheet.m_ItemAndActions = new JsonToQtXmBuilder(ui->characterSheetFrame);
+
+        ui->characterSheetScrollAreaContent->layout()->addWidget(sheet.m_MainInformation);
+        ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_Spells);
+        ui->characterSpellsAndActionsDetailsContent->layout()->addWidget(sheet.m_ItemAndActions);
+
+        sheet.m_MainInformation->BuildFromXml(path + "/main.xml");
+        sheet.m_Spells->BuildFromXml(path + "/spellsDetails.xml");
+        sheet.m_ItemAndActions->BuildFromXml(path + "/itemsAndActionsDetails.xml");
+
+        sheet.m_MainInformation->setMinimumWidth(0);
+        sheet.m_Spells->setMinimumWidth(0);
+        sheet.m_ItemAndActions->setMinimumWidth(0);
+
+        QList<QWidget*>& monsterPartsToHide = m_SheetPartsToHide[dataFileName];
+        monsterPartsToHide.append(sheet.m_MainInformation);
+        monsterPartsToHide.append(sheet.m_Spells);
+        monsterPartsToHide.append(sheet.m_ItemAndActions);
+
+        QList<QWidget*>& monsterPartsToShow = m_SheetPartsToShow[dataFileName];
+        monsterPartsToShow.append(sheet.m_MainInformation);
+        monsterPartsToShow.append(sheet.m_ItemAndActions);
+
+        connect(sheet.m_MainInformation, &JsonToQtXmBuilder::SpellSelectionChanged,
+                this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
+        {
+            profileName("Show spell sheet part")
+            ShowSheetPart(spells);
+            spells->FeedFromJson(object);
+            HideSheetPart(itemsAndActions);
+        });
+
+        connect(sheet.m_MainInformation, &JsonToQtXmBuilder::ItemAndActionSelectionChanged,
+                this, [this, spells = sheet.m_Spells, itemsAndActions = sheet.m_ItemAndActions](const QJsonObject& object)
+        {
+            profileName("Show items & actions sheet part")
+            ShowSheetPart(itemsAndActions);
+            itemsAndActions->FeedFromJson(object);
+            HideSheetPart(spells);
+        });
+
+        ConnectDice(sheet.m_MainInformation);
+        ConnectDice(sheet.m_Spells);
+        ConnectDice(sheet.m_ItemAndActions);
+    }
 }
 
 void CharacterSheet::ConnectDice(JsonToQtXmBuilder* builder)
@@ -154,41 +126,12 @@ void CharacterSheet::FeedMonsterFromJson(const QJsonObject& jsonData, const QStr
     }
 }
 
-void CharacterSheet::FeedPlayerFromJson(const QJsonObject& jsonData)
-{
-    profile();
-
-    HideAllSheets();
-    ShowSheet("player");
-
-    ui->playerJsonToQtXmBuilder->FeedFromJson(jsonData);
-
-    if (ui->spellsPlayerJsonToQtXmBuilder->layout()->isEmpty() && ui->itemsAndActionsPlayerJsonToQtXmBuilder->layout()->isEmpty())
-    {
-        ui->characterSpellsAndActionsDetails->setMaximumHeight(0);
-    }
-    else
-    {
-        static const int maxSize = 30000;
-        ui->characterSpellsAndActionsDetails->setMaximumHeight(maxSize);
-    }
-}
-
 void CharacterSheet::FeedMonsterFromJson(const QString& jsonString, const QString& category)
 {
     QJsonDocument jsonData = QJsonDocument::fromJson(jsonString.toUtf8());
     if (!jsonData.isNull() && jsonData.isObject())
     {
         FeedMonsterFromJson(jsonData.object(), category);
-    }
-}
-
-void CharacterSheet::FeedPlayerFromJson(const QString& jsonString)
-{
-    QJsonDocument jsonData = QJsonDocument::fromJson(jsonString.toUtf8());
-    if (!jsonData.isNull() && jsonData.isObject())
-    {
-        FeedPlayerFromJson(jsonData.object());
     }
 }
 
@@ -200,12 +143,6 @@ void CharacterSheet::ClearMonster()
     {
         iterator->second.m_MainInformation->FeedFromJson(empty);
     }
-}
-
-void CharacterSheet::ClearPlayer()
-{
-    QJsonObject empty;
-    ui->playerJsonToQtXmBuilder->FeedFromJson(empty);
 }
 
 void CharacterSheet::RegisterDiceExpressionReceiver(const QString& receiverName)

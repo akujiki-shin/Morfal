@@ -19,16 +19,12 @@ private:
     using super = QObject;
 
 public:
-    explicit CharacterSheet(Ui::MainWindow* mainWindowUi, const QString& playerSettingPath, const std::map<QString, QString>& monsterSettingPaths, QObject *parent = nullptr);
+    explicit CharacterSheet(Ui::MainWindow* mainWindowUi, const std::map<QString, QString>& playerSettingPaths, const std::map<QString, QString>& monsterSettingPaths, QObject *parent = nullptr);
 
     void FeedMonsterFromJson(const QJsonObject& jsonData, const QString& category);
-    void FeedPlayerFromJson(const QJsonObject& jsonData);
-
     void FeedMonsterFromJson(const QString& jsonString, const QString& category);
-    void FeedPlayerFromJson(const QString& jsonString);
 
     void ClearMonster();
-    void ClearPlayer();
 
     void RegisterDiceExpressionReceiver(const QString& receiverName);
 
@@ -37,9 +33,10 @@ signals:
     void DiceExpressionSentToReceiver(const QString& receiverName, const QString& diceExpression, DiceOperation diceOperation);
 
 private:
+    void BuildFromPaths(const std::map<QString, QString>& paths);
     void HideAllSheets();
-    void HideSheet(const QString& type = "player");
-    void ShowSheet(const QString& type = "player");
+    void HideSheet(const QString& type);
+    void ShowSheet(const QString& type);
     void HideSheetPart(QWidget* widget);
     void ShowSheetPart(QWidget* widget);
     void ConnectDice(JsonToQtXmBuilder* builder);
@@ -50,7 +47,6 @@ private:
 
     Ui::MainWindow* ui { nullptr };
 
-    QString m_PlayerSettingPath;
     QStringList m_DiceExpressionReceivers;
 
     struct MonsterSheet

@@ -61,7 +61,8 @@ private:
 
     std::map<QString, QString> m_MonsterSettingPaths;
     std::map<QString, QString> m_MonsterCategoryToSetting;
-    QString m_PlayerSettingPath;
+    std::map<QString, QString> m_PlayerSettingPaths;
+    std::map<QString, QString> m_PlayerCategoryToSetting;
     QString m_FightTrackerSettingPath;
 
     Ui::MainWindow* ui { nullptr };

@@ -1771,28 +1771,21 @@ c
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_17">
-                 <item>
-                  <widget class="JsonToQtXmBuilder" name="playerJsonToQtXmBuilder" native="true">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>800</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
                 </layout>
                </widget>
               </widget>
@@ -1828,38 +1821,21 @@ c
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_16">
-                 <item>
-                  <widget class="JsonToQtXmBuilder" name="itemsAndActionsPlayerJsonToQtXmBuilder" native="true">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="JsonToQtXmBuilder" name="spellsPlayerJsonToQtXmBuilder" native="true">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                  </widget>
-                 </item>
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
                 </layout>
                </widget>
               </widget>
@@ -2293,12 +2269,6 @@ c
    <class>FightTracker</class>
    <extends>QWidget</extends>
    <header location="global">fighttracker.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>JsonToQtXmBuilder</class>
-   <extends>QWidget</extends>
-   <header location="global">jsontoqtxmbuilder.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
