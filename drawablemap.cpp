@@ -25,6 +25,7 @@
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QWidget>
 
 DrawableMap::DrawableMap(QWidget *parent)
     : super(parent)
@@ -57,6 +58,13 @@ DrawableMap::DrawableMap(QWidget *parent)
 
     m_PixmapItem->setZValue(0);
     m_MapZoneGraphicsObject->setZValue(1);
+/*
+    if (parent != nullptr)
+    {
+        DrawableMap* view = new DrawableMap();
+        view->setScene(scene);
+        view->show();
+    }*/
 }
 
 DrawableMap::~DrawableMap()
@@ -226,4 +234,79 @@ float DrawableMap::GetScale() const
 QPoint DrawableMap::GetScaledMousePosition() const
 {
     return mapFromGlobal(QCursor::pos()) * (1.0f / GetScale());
+}
+
+void DrawableMap::SetAlpha(int alpha)
+{
+    m_MapZoneGraphicsObject->SetAlpha(alpha);
+}
+
+int DrawableMap::GetAlpha() const
+{
+    return m_MapZoneGraphicsObject->GetAlpha();
+}
+
+void DrawableMap::DeleteZone(int zoneId)
+{
+    m_MapZoneGraphicsObject->DeleteZone(zoneId);
+}
+
+void DrawableMap::EditZone(int zoneId)
+{
+    m_MapZoneGraphicsObject->EditZone(zoneId);
+    setFocus();
+}
+
+void DrawableMap::SetSelected(int zoneId)
+{
+    if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
+    {
+        m_MapZoneGraphicsObject->SetSelected(zoneId);
+    }
+}
+
+void DrawableMap::SetSelected(const QList<int>& selection)
+{
+    if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
+    {
+        m_MapZoneGraphicsObject->SetSelected(selection);
+    }
+}
+
+void DrawableMap::mouseMoveEvent(QMouseEvent *event)
+{
+    super::mouseMoveEvent(event);
+
+    viewport()->setCursor(Qt::ArrowCursor);
+    m_MapZoneGraphicsObject->setFocus();
+}
+
+void DrawableMap::mousePressEvent(QMouseEvent *event)
+{
+    super::mousePressEvent(event);
+
+    viewport()->setCursor(Qt::ArrowCursor);
+    m_MapZoneGraphicsObject->setFocus();
+}
+
+void DrawableMap::mouseReleaseEvent(QMouseEvent *event)
+{
+    super::mouseReleaseEvent(event);
+
+    viewport()->setCursor(Qt::ArrowCursor);
+    m_MapZoneGraphicsObject->setFocus();
+}
+
+void DrawableMap::keyPressEvent(QKeyEvent* event)
+{
+    super::keyPressEvent(event);
+
+    m_MapZoneGraphicsObject->forwardKeyPressEvent(event);
+}
+
+void DrawableMap::keyReleaseEvent(QKeyEvent* event)
+{
+    super::keyReleaseEvent(event);
+
+    m_MapZoneGraphicsObject->forwardKeyReleaseEvent(event);
 }

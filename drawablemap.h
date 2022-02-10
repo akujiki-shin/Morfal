@@ -38,31 +38,18 @@ public:
     void SetZoom(int zoom);
     void SetDragEnabled(bool enabled);
     void ZoomOnMouse(int zoom);
-    void SetAlpha(int alpha) { m_MapZoneGraphicsObject->SetAlpha(alpha); }
-    int GetAlpha() const { return m_MapZoneGraphicsObject->GetAlpha(); }
-    void DeleteZone(int zoneId) { m_MapZoneGraphicsObject->DeleteZone(zoneId); }
+    void SetAlpha(int alpha);
+    int GetAlpha() const;
+    void DeleteZone(int zoneId);
+    void EditZone(int zoneId);
     const QString& GetMapPath() const;
-    void EditZone(int zoneId) { m_MapZoneGraphicsObject->EditZone(zoneId); }
     void SetZoomRange(int min, int max);
     void SetZoomIncrement(int increment);
 
     void Initialize(Ui::MainWindow* ui);
 
-    void SetSelected(int zoneId)
-    {
-        if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
-        {
-            m_MapZoneGraphicsObject->SetSelected(zoneId);
-        }
-    }
-
-    void SetSelected(const QList<int>& selection)
-    {
-        if (!m_MapZoneGraphicsObject->IsUpdatingSelection())
-        {
-            m_MapZoneGraphicsObject->SetSelected(selection);
-        }
-    }
+    void SetSelected(int zoneId);
+    void SetSelected(const QList<int>& selection);
 
     template<typename SaveStreamType>
     void Save(SaveStreamType& saveStream, int version) const
@@ -88,44 +75,11 @@ signals:
 
 protected:
     bool eventFilter(QObject *obj, QEvent *evt) override;
-
-    void mouseMoveEvent(QMouseEvent *event) override
-    {
-        super::mouseMoveEvent(event);
-
-        viewport()->setCursor(Qt::ArrowCursor);
-        m_MapZoneGraphicsObject->setFocus();
-    }
-
-    void mousePressEvent(QMouseEvent *event) override
-    {
-        super::mousePressEvent(event);
-
-        viewport()->setCursor(Qt::ArrowCursor);
-        m_MapZoneGraphicsObject->setFocus();
-    }
-
-    void mouseReleaseEvent(QMouseEvent *event) override
-    {
-        super::mouseReleaseEvent(event);
-
-        viewport()->setCursor(Qt::ArrowCursor);
-        m_MapZoneGraphicsObject->setFocus();
-    }
-
-    void keyPressEvent(QKeyEvent* event) override
-    {
-        super::keyPressEvent(event);
-
-        m_MapZoneGraphicsObject->forwardKeyPressEvent(event);
-    }
-
-    void keyReleaseEvent(QKeyEvent* event) override
-    {
-        super::keyReleaseEvent(event);
-
-        m_MapZoneGraphicsObject->forwardKeyReleaseEvent(event);
-    }
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     void DrawMap();

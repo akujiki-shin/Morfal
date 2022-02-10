@@ -608,9 +608,9 @@ void MapZoneGraphicsObject::EditZone(int zoneId)
         RemoveLastLine(*m_UnfinnishedPath);
 
         update();
-
-        setFocus();
     }
+
+    setFocus();
 }
 
 void MapZoneGraphicsObject::RemoveLastLine(QPainterPath& path) const
