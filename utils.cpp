@@ -32,7 +32,7 @@ namespace Utils
 
     bool TryFindDirFromPath(const QString& path, const QString& dirName, QFileInfo& fileInfo)
     {
-        QDirIterator it(path, QDirIterator::NoIteratorFlags);
+        QDirIterator it(path, QDirIterator::Subdirectories);
         while (it.hasNext())
         {
             it.next();
