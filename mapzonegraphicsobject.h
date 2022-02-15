@@ -72,7 +72,7 @@ signals:
     void ZoneCreated(int id);
     void SelectionChanged(const QList<int>& selection);
     void MeasureUpdated(float distance);
-    void OnRightClickOnZone(QPoint globalMousePosition, int zoneId);
+    void OnRightClickOnZone(QPoint globalMousePosition, QList<int> zoneIds);
     void ZoomChanged(int zoom);
 
 protected:

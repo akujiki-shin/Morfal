@@ -56,7 +56,7 @@ private slots:
     void ZoneListSelectionChanged();
     void ZoneInfoListSelectionChanged();
     void MeasureUpdated(float distance);
-    void OnRightClickOnZone(QPoint globalMousePosition, int zoneId);
+    void OnRightClickOnZone(QPoint globalMousePosition, QList<int> zoneIds);
 
     void OnRenameZoneButtonClicked();
 

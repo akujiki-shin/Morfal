@@ -293,7 +293,6 @@ void MapZoneGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent *event)
             if (path->contains(mousePoint))
             {
                 m_Selection.append(id);
-                break;
             }
         }
 
@@ -302,7 +301,7 @@ void MapZoneGraphicsObject::mousePressEvent(QGraphicsSceneMouseEvent *event)
         if (!m_Selection.isEmpty())
         {
             QPoint globalPosition = QCursor::pos();
-            emit OnRightClickOnZone(globalPosition, m_Selection.first());
+            emit OnRightClickOnZone(globalPosition, m_Selection);
             setFocus();
         }
     }

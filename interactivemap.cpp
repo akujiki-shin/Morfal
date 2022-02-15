@@ -1036,31 +1036,42 @@ void InteractiveMap::OnAddMapButtonClicked()
     OnMapDirty();
 }
 
-void InteractiveMap::OnRightClickOnZone(QPoint globalMousePosition, int zoneId)
+void InteractiveMap::OnRightClickOnZone(QPoint globalMousePosition, QList<int> zoneIds)
 {
     QMenu menu;
     bool showMenu = false;
 
-    const QList<DataId>& zoneInfo = m_ZoneInfoData[zoneId];
-    for (auto& [category, itemName] : zoneInfo)
-    {
-        if (category == "[System] Map")
-        {
-            const QString& mapName = itemName;
-            menu.addAction("Go to " + mapName, this, [this, mapName]()
-            {
-                QString mapDirectoryPath;
-                if (Utils::TryFindDirPath("map", mapDirectoryPath))
-                {
-                    QFileInfo fileInfo;
-                    if (Utils::TryFindDirFromPath(mapDirectoryPath, mapName + ".jpg", fileInfo))
-                    {
-                        LoadMap(fileInfo.filePath());
-                    }
-                }
-            });
+    QStringList mapsInMenu;
 
-            showMenu = true;
+    for (int zoneId : zoneIds)
+    {
+        const QList<DataId>& zoneInfo = m_ZoneInfoData[zoneId];
+        for (auto& [category, itemName] : zoneInfo)
+        {
+            if (category == "[System] Map")
+            {
+                const QString& mapName = itemName;
+
+                if (!mapsInMenu.contains(mapName))
+                {
+                    mapsInMenu.append(mapName);
+
+                    menu.addAction("Go to " + mapName, this, [this, mapName]()
+                    {
+                        QString mapDirectoryPath;
+                        if (Utils::TryFindDirPath("map", mapDirectoryPath))
+                        {
+                            QFileInfo fileInfo;
+                            if (Utils::TryFindDirFromPath(mapDirectoryPath, mapName + ".jpg", fileInfo))
+                            {
+                                LoadMap(fileInfo.filePath());
+                            }
+                        }
+                    });
+
+                    showMenu = true;
+                }
+            }
         }
     }
 
