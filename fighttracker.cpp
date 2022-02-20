@@ -1621,11 +1621,7 @@ void FightTracker::MonsterSelectionChanged()
 
     m_JSEngine.collectGarbage();
 
-    if (ui->monstersFightTable->selectedItems().count() == 0)
-    {
-        m_CharacterSheet->ClearMonster();
-    }
-    else
+    if (ui->monstersFightTable->selectedItems().count() > 0)
     {
         QTableWidgetItem* selectedItem = ui->monstersFightTable->selectedItems().front();
         QTableWidgetItem* item = ui->monstersFightTable->item(selectedItem->row(), ms_JSonObjectRow);
@@ -1651,11 +1647,7 @@ void FightTracker::PlayerSelectionChanged()
 
     m_JSEngine.collectGarbage();
 
-    if (ui->playersFightTable->selectedItems().count() == 0)
-    {
-        m_CharacterSheet->ClearMonster();
-    }
-    else
+    if (ui->playersFightTable->selectedItems().count() > 0)
     {
         QTableWidgetItem* selectedItem = ui->playersFightTable->selectedItems().front();
         QTableWidgetItem* item = ui->playersFightTable->item(selectedItem->row(), ms_JSonObjectRow);
