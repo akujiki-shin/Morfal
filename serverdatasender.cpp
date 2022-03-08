@@ -5,17 +5,19 @@
 #include <QTcpSocket>
 #include <QNetworkAccessManager>
 #include <QString>
+#include <QNetworkReply>
+#include <QTcpServer>
 
 #include "utils.h"
 
-ServerDataSender::ServerDataSender(Ui::MainWindow* mainWindowUI, QObject *parent)
+ServerDataSender::ServerDataSender(Ui::MainWindow* mainWindowUI, int serverPort, QObject *parent)
     : super(parent)
     , ui(mainWindowUI)
 {
     m_Socket = new QTcpSocket(this);
+    m_Server = new QTcpServer(this);
 
     connect(m_Socket, &QTcpSocket::connected, this, &ServerDataSender::SocketConnected);
-    connect(m_Socket, &QTcpSocket::readyRead, this, &ServerDataSender::SocketReadyRead);
     connect(m_Socket, &QTcpSocket::stateChanged, this, &ServerDataSender::SocketStateChanged);
 
     connect(ui->serverAddress, &QLineEdit::editingFinished, this, &ServerDataSender::OnServerAddressEditingFinished);
@@ -37,12 +39,33 @@ ServerDataSender::ServerDataSender(Ui::MainWindow* mainWindowUI, QObject *parent
 
     m_NetworkAccessManager = new QNetworkAccessManager(this);
     ui->textToSend->setWordWrapMode(QTextOption::WrapAnywhere);
+
+    if (m_Server->listen(QHostAddress::Any, serverPort))
+    {
+        ui->listeningPortLabel->setText("listen to port " + QString::number(m_Server->serverPort()));
+    }
+    else
+    {
+        ui->listeningPortLabel->setText("Failed to listen to port " + QString::number(serverPort));
+    }
+
+    connect(m_Server, &QTcpServer::newConnection, this, &ServerDataSender::OnNewConnection);
 }
 
 ServerDataSender::~ServerDataSender()
 {
     delete m_Socket;
     delete m_NetworkAccessManager;
+}
+
+void ServerDataSender::OnNewConnection()
+{
+    m_ServerSocket = m_Server->nextPendingConnection();
+
+    if (m_ServerSocket != nullptr)
+    {
+        connect(m_ServerSocket, &QTcpSocket::readyRead, this, &ServerDataSender::SocketReadyRead);
+    }
 }
 
 void ServerDataSender::ConnectToServer()
@@ -78,9 +101,31 @@ void ServerDataSender::OnServerAddressEditingFinished()
 
 void ServerDataSender::SocketReadyRead()
 {
-    while (m_Socket->canReadLine())
+    static const QString endOfHttpHeader = "\r\n\r\n";
+
+    QString data = m_ServerSocket->readAll();
+    QStringList tokens = data.split(endOfHttpHeader);
+    if (tokens.size() > 1)
     {
-        ui->infoText->setText(m_Socket->readLine());
+        const QString& header = tokens[0];
+        if (header.contains("POST"))
+        {
+            QString content = tokens[1];
+            if (content.startsWith("[clear]"))
+            {
+                content.remove("[clear]");
+                ui->receivedText->setPlainText("");
+            }
+
+            ui->receivedText->insertPlainText(content);
+        }
+    }
+
+    m_ServerSocket = m_Server->nextPendingConnection();
+
+    if (m_ServerSocket != nullptr)
+    {
+        connect(m_ServerSocket, &QTcpSocket::readyRead, this, &ServerDataSender::SocketReadyRead);
     }
 }
 

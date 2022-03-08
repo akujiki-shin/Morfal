@@ -49,6 +49,7 @@ private:
 
     void OpenRightTab();
     void CloseRightTab();
+    void LoadNetworkSettings();
 
 private:
     QString m_ExpandedServerText;
@@ -76,4 +77,5 @@ private:
     MusicPlayer* m_MusicPlayer { nullptr };
     InteractiveMap* m_InteractiveMap { nullptr };
     bool m_IsUiLoaded { false };
+    int m_ServerPort { 0 };
 };

@@ -31,11 +31,12 @@ MainWindow::MainWindow(QWidget *parent)
     RetrieveRuleSettingsPaths();
     ReadMapSettings();
     ReadFightTrackerSettings();
+    LoadNetworkSettings();
 
     m_CharacterSheet = new CharacterSheet(ui, m_PlayerSettingPaths, m_MonsterSettingPaths, this);
 
     m_MusicPlayer = new MusicPlayer(ui, this);
-    m_ServerDataSender = new ServerDataSender(ui, this);
+    m_ServerDataSender = new ServerDataSender(ui, m_ServerPort, this);
     m_InteractiveMap = new InteractiveMap(ui, m_CharacterSheet, this);
 
     ui->fightTrackerWidget->SetUI(ui);
@@ -56,8 +57,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_InteractiveMap->Initialize();
     ui->fightTrackerWidget->InitializeFilters();
 
-    m_ExpandedServerText = "<<\n\n" + Utils::Verticalize(tr("server")) + "\n<<";
-    m_CollapsedServerText = ">>\n\n" + Utils::Verticalize(tr("server")) + "\n>>";
+    m_ExpandedServerText = "<<\n\n" + Utils::Verticalize(tr("network")) + "\n<<";
+    m_CollapsedServerText = ">>\n\n" + Utils::Verticalize(tr("network")) + "\n>>";
 
     ui->expandServerButton->setText(m_CollapsedServerText);
 
@@ -384,3 +385,32 @@ void MainWindow::LoadZoomSettings()
         }
     }
 }
+
+void MainWindow::LoadNetworkSettings()
+{
+    QString xmlPath;
+    if (Utils::TryFindDirPath("settings", xmlPath))
+    {
+        xmlPath += "/Application.xml";
+
+        QFile file(xmlPath);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            QXmlStreamReader reader(&file);
+            while (reader.readNext() && !reader.isEndDocument())
+            {
+                if (!reader.isEndElement())
+                {
+                    const QString& elementName = reader.name().toString();
+                    if (elementName == "Server")
+                    {
+                        m_ServerPort = reader.attributes().value("Port").toInt();
+
+                        return;
+                    }
+                }
+            }
+        }
+    }
+}
+

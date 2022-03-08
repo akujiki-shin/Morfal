@@ -10,6 +10,8 @@ QT_END_NAMESPACE
 
 class QTcpSocket;
 class QNetworkAccessManager;
+class QNetworkReply;
+class QTcpServer;
 class QString;
 
 class ServerDataSender : public QObject
@@ -20,7 +22,7 @@ private:
     using super = QObject;
 
 public:
-    explicit ServerDataSender(Ui::MainWindow* mainWindowUI, QObject *parent = nullptr);
+    explicit ServerDataSender(Ui::MainWindow* mainWindowUI, int serverPort, QObject *parent = nullptr);
     ~ServerDataSender();
 
 private slots:
@@ -30,6 +32,7 @@ private slots:
     void SocketConnected();
     void SocketClosed();
     void SocketStateChanged(QAbstractSocket::SocketState);
+    void OnNewConnection();
 
     void OnSendButtonClicked();
 
@@ -40,5 +43,8 @@ private:
 private:
     Ui::MainWindow* ui { nullptr };
     QTcpSocket* m_Socket { nullptr };
+    QTcpSocket* m_ServerSocket { nullptr };
     QNetworkAccessManager* m_NetworkAccessManager { nullptr };
+
+    QTcpServer* m_Server { nullptr };
 };
