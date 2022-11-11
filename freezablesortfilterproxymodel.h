@@ -19,24 +19,64 @@ public:
             return true;
         }
 
+        if (ShouldForceFilterOut(index))
+        {
+            return false;
+        }
+
         return super::filterAcceptsRow(sourceRow, sourceIndex);
     }
 
-    using Predicate = bool (PredicateHolder::*)(const QString&) const;
+    using IgnoreFilterPredicate = bool (PredicateHolder::*)(const QString&) const;
+    using ForceFilterOutPredicate = bool (PredicateHolder::*)(const QString& fileName, const QString& itemName) const;
 
-    void SetPredicate(PredicateHolder* predicateHolder, Predicate predicate)
+    void SetIgnoreFilterPredicate(PredicateHolder* predicateHolder, IgnoreFilterPredicate predicate)
     {
-        m_Predicate = predicate;
+        m_IgnoreFilterPredicate = predicate;
         m_PredicateHolder = predicateHolder;
+    }
+
+    void SetForceFilterOutPredicate(PredicateHolder* predicateHolder, ForceFilterOutPredicate predicate)
+    {
+        m_ForceFilterOutPredicate = predicate;
+        m_PredicateHolder = predicateHolder;
+    }
+
+    void SetDataFileName(const QString& fileName)
+    {
+        m_FileName = fileName;
     }
 
 private:
     bool ShouldIgnoreFilter(const QModelIndex& index) const
     {
-        const QString& data = index.data().toString();
-        return (m_PredicateHolder->*m_Predicate)(data);
+        bool ignoreFilter = false;
+
+        if (m_IgnoreFilterPredicate != nullptr)
+        {
+            const QString& data = index.data().toString();
+            ignoreFilter = (m_PredicateHolder->*m_IgnoreFilterPredicate)(data);
+        }
+
+        return ignoreFilter;
     }
 
-    Predicate m_Predicate { nullptr };
+    bool ShouldForceFilterOut(const QModelIndex& index) const
+    {
+        bool forceFilterOut = false;
+
+        if (m_ForceFilterOutPredicate != nullptr)
+        {
+            const QString& data = index.data().toString();
+            forceFilterOut = (m_PredicateHolder->*m_ForceFilterOutPredicate)(m_FileName, data);
+        }
+
+        return forceFilterOut;
+    }
+
+private:
+    IgnoreFilterPredicate m_IgnoreFilterPredicate { nullptr };
+    ForceFilterOutPredicate m_ForceFilterOutPredicate { nullptr };
     PredicateHolder* m_PredicateHolder { nullptr };
+    QString m_FileName{""};
 };

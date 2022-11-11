@@ -3,6 +3,7 @@
 #include <QAbstractListModel>
 #include <QListWidgetItem>
 #include <QCompleter>
+#include <QComboBox>
 #include <QSizePolicy>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -17,6 +18,7 @@
 #include "utils.h"
 #include <QStyleOption>
 #include <QPainter>
+#include "jsonfilters/jsonfilter.h"
 
 SearchableMultiListDataWiget::SearchableMultiListDataWiget(QWidget *parent)
     : super(parent)
@@ -29,12 +31,14 @@ SearchableMultiListDataWiget::SearchableMultiListDataWiget(QWidget *parent)
 
     QVBoxLayout* outerLayout = new QVBoxLayout();
     outerLayout->setObjectName("categoriesOuterLayout");
+    ui.outerLayout = outerLayout;
     this->setLayout(outerLayout);
     {
         QFrame* searchFrame = new QFrame(this);
         searchFrame->setObjectName("searchFrame");
         searchFrame->setMaximumHeight(45);
         searchFrame->setStyleSheet("QFrame {border: none;}");
+        searchFrame->setContentsMargins(0, 0, 0, 0);
 
         outerLayout->addWidget(searchFrame);
         {
@@ -195,6 +199,40 @@ bool SearchableMultiListDataWiget::ShouldItemBeAcceptedByFilter(const QString& i
     return (!itemName.isEmpty() && Utils::Contains(m_MergedSelectionItemNames, itemName));
 }
 
+bool SearchableMultiListDataWiget::TryGetSettingNameFromCategory(QString category, QString& setting) const
+{
+    if (m_MonsterCategoryToSetting != nullptr && m_MonsterCategoryToSetting->contains(category))
+    {
+        setting = m_MonsterCategoryToSetting->at(category);
+        return true;
+    }
+
+    return false;
+}
+
+bool SearchableMultiListDataWiget::ShouldItemBeRejectedByFilter(const QString& fileName, const QString& itemName) const
+{
+    const QString& data = m_JSonData.at(fileName).at(itemName);
+    QJsonDocument jsonData = QJsonDocument::fromJson(data.toUtf8());
+    QString setting;
+    if (!jsonData.isNull() && jsonData.isObject()
+      && TryGetSettingNameFromCategory(fileName, setting)
+      && m_ActiveFiltersPerRule.contains(setting))
+    {
+        QJsonObject jsonObject = jsonData.object();
+        const std::vector<JSonFilter*>& filters = m_ActiveFiltersPerRule.at(setting);
+        for(JSonFilter* filter : filters)
+        {
+            if (!filter->IsValid(jsonObject))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 void SearchableMultiListDataWiget::OnSelectedCategoryItemChange(const QListView& listView, const QItemSelection& /*deselected*/, const QString& categoryName)
 {
     std::vector<QString>& selectionItemNames = m_CategorySelectionItemNames[categoryName];
@@ -350,6 +388,26 @@ void SearchableMultiListDataWiget::OnClearSearchButtonClicked()
     ui.searchText->clear();
 }
 
+void SearchableMultiListDataWiget::OnFilterTextChanged(const QString& filterName)
+{
+    m_ActiveFiltersPerRule.clear();
+
+    for (auto& [ruleName, filterMap] : m_LoadedFilters)
+    {
+        if (JSonFilter* filter = filterMap[filterName])
+        {
+            m_ActiveFiltersPerRule[ruleName].push_back(filter);
+        }
+    }
+
+    for (DataSortFilterProxyModel* filter : m_SearchFilters)
+    {
+        filter->setFilterFixedString(ui.searchText->text());
+    }
+
+    RefreshCategoryList();
+}
+
 void SearchableMultiListDataWiget::OnExpandCategoryButtonClicked()
 {
     for (auto& [listView, section] : m_CategoryLists)
@@ -400,4 +458,47 @@ void SearchableMultiListDataWiget::paintEvent(QPaintEvent * )
     styleOption.initFrom(this);
     QPainter painter(this);
     style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
+}
+
+void SearchableMultiListDataWiget::SetFilters(Filters& filters, const std::map<QString, QString>* monsterCategoryToSetting)
+{
+    m_MonsterCategoryToSetting = monsterCategoryToSetting;
+
+    if (filters.size() > 0)
+    {
+        m_LoadedFilters = filters;
+
+        QComboBox* comboBox = new QComboBox(this);
+        comboBox->addItem("None");
+
+        for (auto& [ruleName, filterMap] : filters)
+        {
+            for (auto& [name, filter] : filterMap)
+            {
+                comboBox->addItem(name);
+            }
+        }
+
+        ui.outerLayout->insertWidget(0, comboBox);
+
+        QFrame* frame = new QFrame(this);
+        frame->setMaximumHeight(45);
+        frame->setStyleSheet("QFrame {border: none;}");
+        frame->setContentsMargins(0, 0, 0, 0);
+
+        ui.outerLayout->insertWidget(0, frame);
+        {
+            QHBoxLayout* searchLayout = new QHBoxLayout();
+            frame->setLayout(searchLayout);
+            {
+                QLabel* label = new QLabel(this);
+                label->setText(tr("Filter"));
+
+                connect(comboBox, &QComboBox::currentTextChanged, this, &SearchableMultiListDataWiget::OnFilterTextChanged);
+
+                searchLayout->addWidget(label);
+                searchLayout->addWidget(comboBox);
+            }
+        }
+    }
 }

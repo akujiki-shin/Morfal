@@ -7,9 +7,11 @@
 #include <QTimer>
 #include <QFileDialog>
 #include <QCompleter>
+#include <QXmlStreamReader>
 
 #include "minimalscopeprofiler.h"
 #include "mapzonegraphicsobject.h"
+#include "jsonfilters/jsonfilter.h"
 
 void ExtractDataListFromFile(Ui::MainWindow* mainWindow, QFile& file, std::vector<std::pair<QString, QString>>& dataList)
 {
@@ -48,10 +50,50 @@ void ExtractDataListFromFile(Ui::MainWindow* mainWindow, QFile& file, std::vecto
     }
 }
 
-InteractiveMap::InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* characterSheet, QObject *parent)
+void InteractiveMap::LoadFilters()
+{
+    QFileInfo settingsDir;
+    if (Utils::TryFindDir("settings", settingsDir))
+    {
+        QDirIterator rulesDir = Utils::GetFileInfoFromPath(settingsDir.filePath() + "/rules").dir();
+        QString ruleName = rulesDir.fileName();
+
+        std::vector<QFileInfo> rulesSubDirectories;
+        Utils::GetDirectSubDirList(rulesDir.path(), rulesSubDirectories);
+
+        for (const QFileInfo& ruleDir : rulesSubDirectories)
+        {
+            QString ruleName = Utils::CleanFileName(ruleDir.fileName());
+            QString xmlPath = ruleDir.filePath() + "/filters.xml";
+
+            QFile file(xmlPath);
+            if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QXmlStreamReader reader(&file);
+                while (reader.readNext() && !reader.isEndDocument())
+                {
+                    if (!reader.isEndElement())
+                    {
+                        const QString& elementName = reader.name().toString();
+                        if (elementName == "filter")
+                        {
+                            const QString& filterName = reader.attributes().value("Name").toString();
+                            m_DataFilters[ruleName][filterName] = new JSonFilter(reader);
+                        }
+                    }
+                }
+            }
+        }
+
+        ui->jsonDataList->SetFilters(m_DataFilters, m_MonsterCategoryToSetting);
+    }
+}
+
+InteractiveMap::InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* characterSheet, const std::map<QString, QString>& monsterCategoryToSetting, QObject *parent)
     : super(parent)
     , ui(mainWindowUi)
     , m_CharacterSheet(characterSheet)
+    , m_MonsterCategoryToSetting(&monsterCategoryToSetting)
 {
     m_UpdateTextToSendTimer = new QTimer(this);
     m_ReactToZoneListChangedTimer = new QTimer(this);
@@ -71,6 +113,7 @@ void InteractiveMap::Initialize()
     SearchableMultiListDataWiget::FileDataExtractor dataExtractor = ExtractDataListFromFile;
 
     ui->jsonDataList->ListData("data", ".json", dataExtractor, true);
+    LoadFilters();
 
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::SelectionBeingModified, this, &InteractiveMap::DataSelectionBeingModified);
     connect(ui->jsonDataList, &SearchableMultiListDataWiget::SelectionChanged, this, &InteractiveMap::DataSelectionChanged);
@@ -204,7 +247,7 @@ void InteractiveMap::SetupZoneListSearchableView()
     QItemSelectionModel* selectionModel = new QItemSelectionModel(searchFilter, this);
     ui->mapZoneListView->setSelectionModel(selectionModel);
 
-    searchFilter->SetPredicate(this, &InteractiveMap::ShouldItemBeAcceptedByFilter);
+    searchFilter->SetIgnoreFilterPredicate(this, &InteractiveMap::ShouldItemBeAcceptedByFilter);
 
     ui->mapZoneListView->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
 

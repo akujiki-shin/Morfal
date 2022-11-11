@@ -23,7 +23,7 @@ private:
     using super = QObject;
 
 public:
-    explicit InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* characterSheet, QObject *parent = nullptr);
+    explicit InteractiveMap(Ui::MainWindow* mainWindowUi, CharacterSheet* characterSheet, const std::map<QString, QString>& monsterCategoryToSetting, QObject *parent = nullptr);
     ~InteractiveMap();
 
     using InfoData = std::map<QString, // category (mob, city, ...)
@@ -88,6 +88,7 @@ private:
     void ComputeMergedJSon();
 
     void UpdateTextToSend();
+    void LoadFilters();
 
     void SetZoom(int zoom);
     void MapZoomChanged(int zoom);
@@ -134,6 +135,8 @@ private:
     std::map<int, QList<QString>> m_ZoneInfoCategories;
     InfoData m_UsedData;
 
+    SearchableMultiListDataWiget::Filters m_DataFilters;
+
     bool m_IsUpdatingCategoryComboBox { false };
 
     Ui::MainWindow *ui { nullptr };
@@ -144,6 +147,8 @@ private:
     QString m_TextToSend;
     std::vector<QString> m_MergedJSonElements;
     std::vector<QString> m_MergedZoneInfoElements;
+
+    const std::map<QString, QString>* m_MonsterCategoryToSetting { nullptr };
 
     CharacterSheet* m_CharacterSheet { nullptr };
 

@@ -23,6 +23,7 @@ SOURCES += \
     drawablemap.cpp \
     fighttracker.cpp \
     interactivemap.cpp \
+    jsonfilters/jsonfilter.cpp \
     jsontoqtxmbuilder.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     drawablemap.h \
     fighttracker.h \
     interactivemap.h \
+    jsonfilters/jsonfilter.h \
     jsontoqtxmbuilder.h \
     mainwindow.h \
     mapzonegraphicsobject.h \

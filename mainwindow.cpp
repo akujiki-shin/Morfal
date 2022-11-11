@@ -37,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_MusicPlayer = new MusicPlayer(ui, this);
     m_ServerDataSender = new ServerDataSender(ui, m_ServerPort, this);
-    m_InteractiveMap = new InteractiveMap(ui, m_CharacterSheet, this);
+    m_InteractiveMap = new InteractiveMap(ui, m_CharacterSheet, m_MonsterCategoryToSetting, this);
 
     ui->fightTrackerWidget->SetUI(ui);
     ui->fightTrackerWidget->SetInfoData(&ui->jsonDataList->GetData());

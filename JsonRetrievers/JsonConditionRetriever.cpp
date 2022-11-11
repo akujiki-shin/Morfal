@@ -43,6 +43,10 @@ bool JSonConditionRetriever::IsValidInternal(const QJsonValue& jsonValue, QMap<Q
     {
         return asString == m_ConditionOperand;
     }
+    else if (m_ConditionOperator == "StringContains")
+    {
+        return asString.contains(m_ConditionOperand, Qt::CaseInsensitive);
+    }
     else if (m_ConditionOperator == "BoolEqual")
     {
         bool operand = (m_ConditionOperand == "true");

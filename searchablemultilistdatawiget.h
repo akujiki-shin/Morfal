@@ -19,6 +19,8 @@ namespace Utils
     QString RemoveJsonExtension(const QString& name);
 }
 
+class JSonFilter;
+
 class SearchableMultiListDataWiget : public QWidget
 {
 private:
@@ -30,6 +32,7 @@ public:
     explicit SearchableMultiListDataWiget(QWidget* parent = nullptr);
 
     using Data = std::map<QString, std::map<QString, QString>>;
+    using Filters = std::map<QString, std::map<QString, JSonFilter*>>;
     using JSonCategoryInfoPtr = std::pair<const QJsonObject*, const QString*>;
     using JSonCategoryInfo = std::pair<const QJsonObject, const QString>;
 
@@ -47,9 +50,10 @@ signals:
 
 private slots:
     void OnSearchTextChanged();
+    void OnClearSearchButtonClicked();
     void OnClearSelectionButtonClicked();
 
-    void OnClearSearchButtonClicked();
+    void OnFilterTextChanged(const QString& filterName);
 
     void OnExpandCategoryButtonClicked();
 
@@ -81,6 +85,8 @@ public:
     void paintEvent(QPaintEvent * ) override;
 
     inline void SetMainWindow(Ui::MainWindow* mainWindow) { m_MainWindow = mainWindow; }
+    void SetFilters(Filters& filters, const std::map<QString, QString>* monsterCategoryToSetting);
+    bool TryGetSettingNameFromCategory(QString category, QString& setting) const;
 
 private:
     void LoadDataList(const std::vector<std::pair<QString, QString>>& dataList, std::map<QString, QString>& categoryMap, QListWidget* sectionInternalList);
@@ -97,16 +103,20 @@ private:
 
     bool ItemMatchesSearch(const QString& itemName) const;
     bool ShouldItemBeAcceptedByFilter(const QString& itemName) const;
+    bool ShouldItemBeRejectedByFilter(const QString& fileName, const QString& itemName) const;
 
 private:
     Data m_JSonData;
     std::map<QString, std::vector<QString>> m_CategorySelectionItemNames;
     std::vector<QString> m_MergedSelectionItemNames;
+    std::map<QString, std::vector<JSonFilter*>> m_ActiveFiltersPerRule;
+    Filters m_LoadedFilters;
     std::vector<std::pair<QListView*, Section*>> m_CategoryLists;
     QStringList m_MergedCategoriesItemName;
     QTimer* m_ComputeMergedJSonTimer { nullptr };
     QString m_TextToSend;
     bool m_CanBeSentToZone{ false };
+    const std::map<QString, QString>* m_MonsterCategoryToSetting{ nullptr };
 
     std::vector<QItemSelectionModel*> m_SelectionModels;
 
@@ -118,6 +128,7 @@ private:
         QVBoxLayout* categoriesLayout { nullptr };
         QLineEdit* searchText { nullptr };
         QWidget* scrollContent { nullptr };
+        QVBoxLayout* outerLayout { nullptr };
     };
 
     UI ui {};
@@ -157,7 +168,9 @@ void SearchableMultiListDataWiget::ParseFile(QDirIterator& fileIterator, const Q
     m_SelectionModels.push_back(selectionModel);
     listView->setSelectionModel(selectionModel);
 
-    searchFilter->SetPredicate(this, &SearchableMultiListDataWiget::ShouldItemBeAcceptedByFilter);
+    searchFilter->SetIgnoreFilterPredicate(this, &SearchableMultiListDataWiget::ShouldItemBeAcceptedByFilter);
+    searchFilter->SetForceFilterOutPredicate(this, &SearchableMultiListDataWiget::ShouldItemBeRejectedByFilter);
+    searchFilter->SetDataFileName(fileName);
 
     listView->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
 
