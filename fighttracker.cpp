@@ -956,7 +956,7 @@ void FightTracker::AddMonsterButtonClicked()
             QList<AlterationInfo> alterationInfo;
             for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
             {
-                alterationInfo.append({false, 0});
+                alterationInfo.append({Qt::Unchecked, 0});
             }
 
             newItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
@@ -1055,7 +1055,7 @@ void FightTracker::AddPlayerButtonClicked()
             QList<AlterationInfo> alterationInfo;
             for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
             {
-                alterationInfo.append({false, 0});
+                alterationInfo.append({Qt::Unchecked, 0});
             }
 
             newItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
@@ -1501,7 +1501,7 @@ void FightTracker::ClickOnAlteration(QTableWidget* table, int row, int column)
             for (int i = 0; i < alterationInfoList.count(); ++i)
             {
                 const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
-                if (alterationInfo.m_Checked)
+                if (alterationInfo.m_CheckState == Qt::Checked)
                 {
                     alterationCheckedCount[i]++;
                 }
@@ -1534,18 +1534,33 @@ void FightTracker::ValidateAlterationWidget()
         return;
     }
 
-    QList<AlterationInfo> alterationInfo;
+    QList<AlterationInfo> rawAlterationInfo;
     for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
     {
         const int timeLimit = m_AlterationDurationSpinBoxes[i]->value();
-        const bool checked = m_AlterationCheckBoxes[i]->isChecked();
+        const Qt::CheckState checkState = m_AlterationCheckBoxes[i]->checkState();
 
-        alterationInfo.append({checked, timeLimit});
+        rawAlterationInfo.append({checkState, timeLimit});
     }
 
     for (QTableWidgetItem* item : m_CurrentAlterationItems)
     {
-        item->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
+        QList<AlterationInfo> wantedAlterationInfo;
+        QList<QVariant> currentAlterationInfoList = item->data(Qt::UserRole).toList();
+
+        for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
+        {
+            if (rawAlterationInfo[i].m_CheckState == Qt::PartiallyChecked && (currentAlterationInfoList.count() > i))
+            {
+                wantedAlterationInfo.append(currentAlterationInfoList[i].value<AlterationInfo>());
+            }
+            else
+            {
+                wantedAlterationInfo.append(rawAlterationInfo[i]);
+            }
+        }
+
+        item->setData(Qt::UserRole, QVariant::fromValue(wantedAlterationInfo));
         UpdateAlterationInfo(*item);
     }
 
@@ -1565,7 +1580,7 @@ void FightTracker::UpdateAlterationInfo(QTableWidgetItem& item)
         const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
         QCheckBox* checkBox = m_AlterationCheckBoxes[i];
         int timeLimit = alterationInfo.m_TimeLimit;
-        bool checked = alterationInfo.m_Checked;
+        bool checked = alterationInfo.m_CheckState == Qt::Checked;
 
         if (checked)
         {
@@ -1596,10 +1611,10 @@ void FightTracker::DecrementAlterationCountDown(QTableWidgetItem& item)
     {
         AlterationInfo alterationInfo = alterationInfoList[i].value<AlterationInfo>();
 
-        if (alterationInfo.m_Checked && alterationInfo.m_TimeLimit > 0)
+        if (alterationInfo.m_CheckState == Qt::Checked && alterationInfo.m_TimeLimit > 0)
         {
             alterationInfo.m_TimeLimit--;
-            alterationInfo.m_Checked = (alterationInfo.m_TimeLimit > 0);
+            alterationInfo.m_CheckState = (alterationInfo.m_TimeLimit > 0) ? Qt::Checked : Qt::Unchecked;
         }
 
         alterationInfoList[i] = QVariant::fromValue(alterationInfo);
@@ -1615,7 +1630,7 @@ void FightTracker::ClearAlterationWidget()
     QList<AlterationInfo> alterationInfo;
     for (int i = 0; i < m_AlterationCheckBoxes.count(); ++i)
     {
-        alterationInfo.append({false, 0});
+        alterationInfo.append({Qt::Unchecked, 0});
         m_AlterationCheckBoxes[i]->setCheckState(Qt::CheckState::Unchecked);
         m_AlterationDurationSpinBoxes[i]->setValue(0);
     }
@@ -1647,7 +1662,7 @@ void FightTracker::ClearAllAlterations()
                 QList<AlterationInfo> alterationInfo;
                 for (int j = 0; j < m_AlterationCheckBoxes.count(); ++j)
                 {
-                    alterationInfo.append({false, 0});
+                    alterationInfo.append({Qt::Unchecked, 0});
                     item->setData(Qt::DisplayRole, "");
                 }
 

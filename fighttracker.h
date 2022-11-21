@@ -26,7 +26,7 @@ class UnderlinedRowDelegate;
 
 struct AlterationInfo
 {
-    bool m_Checked { false };
+    Qt::CheckState m_CheckState { Qt::Unchecked };
     int m_TimeLimit { 0 };
 };
 Q_DECLARE_METATYPE(AlterationInfo);
