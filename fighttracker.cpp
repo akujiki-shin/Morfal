@@ -163,7 +163,7 @@ void FightTracker::Initialize()
     connect(ui->playersFightTable, &QTableWidget::customContextMenuRequested,
             this, [this](const QPoint &pos)
     {
-        if (m_CurrentAlterationItem == nullptr && !m_HealthWidget->isVisible())
+        if (m_CurrentAlterationItems.empty() && !m_HealthWidget->isVisible())
         {
             QPoint globalPosition = ui->playersFightTable->mapToGlobal(pos);
 
@@ -191,7 +191,7 @@ void FightTracker::Initialize()
     connect(ui->monstersFightTable, &QTableWidget::customContextMenuRequested,
             this, [this](const QPoint &pos)
     {
-        if (m_CurrentAlterationItem == nullptr && !m_HealthWidget->isVisible())
+        if (m_CurrentAlterationItems.empty() && !m_HealthWidget->isVisible())
         {
             QPoint globalPosition = ui->monstersFightTable->mapToGlobal(pos);
 
@@ -1471,28 +1471,65 @@ void FightTracker::RollInitiative(QTableWidget* table, TableType tableType, cons
 
 void FightTracker::ClickOnAlteration(QTableWidget* table, int row, int column)
 {
-    QPoint mousePosition = QCursor::pos();
-    int screenHeight = QApplication::screenAt(mousePosition)->size().height();
+    m_CurrentAlterationItems.clear();
 
-    QPoint offset(20, qMin(screenHeight - (mousePosition.y() + m_AlterationWidget->height() + 50), 0));
-
-    m_AlterationWidget->setGeometry(QRect(mousePosition + offset, QSize(150,200)));
-    m_AlterationWidget->setVisible(true);
-
-    m_CurrentAlterationItem = table->item(row, column);
-
-    QList<QVariant> alterationInfoList = m_CurrentAlterationItem->data(Qt::UserRole).toList();
-    for (int i = 0; i < alterationInfoList.count(); ++i)
+    for (QTableWidgetItem* item : table->selectedItems())
     {
-        const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
-        m_AlterationCheckBoxes[i]->setChecked(alterationInfo.m_Checked);
-        m_AlterationDurationSpinBoxes[i]->setValue(alterationInfo.m_TimeLimit);
+        if (item->column() == column)
+        {
+            m_CurrentAlterationItems.append(item);
+        }
+    }
+
+    const int selectedRowCount = m_CurrentAlterationItems.count();
+    if (selectedRowCount > 0)
+    {
+        const int alterationCount = m_AlterationCheckBoxes.count();
+
+        QPoint mousePosition = QCursor::pos();
+        int screenHeight = QApplication::screenAt(mousePosition)->size().height();
+        QPoint offset(20, qMin(screenHeight - (mousePosition.y() + m_AlterationWidget->height() + 50), 0));
+
+        m_AlterationWidget->setGeometry(QRect(mousePosition + offset, QSize(150,200)));
+        m_AlterationWidget->setVisible(true);
+
+        QList<int> alterationCheckedCount;
+        alterationCheckedCount.resize(alterationCount);
+        for (QTableWidgetItem* item : m_CurrentAlterationItems)
+        {
+            QList<QVariant> alterationInfoList = item->data(Qt::UserRole).toList();
+            for (int i = 0; i < alterationInfoList.count(); ++i)
+            {
+                const AlterationInfo& alterationInfo = alterationInfoList[i].value<AlterationInfo>();
+                if (alterationInfo.m_Checked)
+                {
+                    alterationCheckedCount[i]++;
+                }
+
+                m_AlterationDurationSpinBoxes[i]->setValue(alterationInfo.m_TimeLimit);
+            }
+        }
+
+        for (int i = 0; i < alterationCount; ++i)
+        {
+            Qt::CheckState state = Qt::Unchecked;
+            if (alterationCheckedCount[i] == selectedRowCount)
+            {
+                state = Qt::Checked;
+            }
+            else if (alterationCheckedCount[i] > 0)
+            {
+                state = Qt::PartiallyChecked;
+            }
+
+            m_AlterationCheckBoxes[i]->setCheckState(state);
+        }
     }
 }
 
 void FightTracker::ValidateAlterationWidget()
 {
-    if (m_CurrentAlterationItem == nullptr)
+    if (m_CurrentAlterationItems.empty())
     {
         return;
     }
@@ -1506,10 +1543,13 @@ void FightTracker::ValidateAlterationWidget()
         alterationInfo.append({checked, timeLimit});
     }
 
-    m_CurrentAlterationItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
-    UpdateAlterationInfo(*m_CurrentAlterationItem);
+    for (QTableWidgetItem* item : m_CurrentAlterationItems)
+    {
+        item->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
+        UpdateAlterationInfo(*item);
+    }
 
-    m_CurrentAlterationItem = nullptr;
+    m_CurrentAlterationItems.clear();
 
     m_AlterationWidget->setVisible(false);
 }
@@ -1580,10 +1620,14 @@ void FightTracker::ClearAlterationWidget()
         m_AlterationDurationSpinBoxes[i]->setValue(0);
     }
 
-    m_CurrentAlterationItem->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
+    for (QTableWidgetItem* item : m_CurrentAlterationItems)
+    {
+        item->setData(Qt::UserRole, QVariant::fromValue(alterationInfo));
 
-    m_CurrentAlterationItem->setData(Qt::DisplayRole, "");
-    m_CurrentAlterationItem = nullptr;
+        item->setData(Qt::DisplayRole, "");
+    }
+
+    m_CurrentAlterationItems.clear();
 
     m_AlterationWidget->setVisible(false);
 }

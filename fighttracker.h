@@ -234,7 +234,7 @@ private:
     QList<QCheckBox*> m_AlterationCheckBoxes;
     QList<QSpinBox*> m_AlterationDurationSpinBoxes;
     QWidget* m_AlterationWidget { nullptr };
-    QTableWidgetItem* m_CurrentAlterationItem { nullptr };
+    QList<QTableWidgetItem*> m_CurrentAlterationItems;
 
     QWidget* m_HealthWidget { nullptr };
     QSpinBox* m_HealthSpinBox { nullptr };
