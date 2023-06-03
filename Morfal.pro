@@ -90,6 +90,7 @@ QT += \
 RESOURCES += \
     qrc.qrc
 
+RC_FILE = Morfal.rc
 RC_ICONS = morfal.ico
 
 TARGET = Morfal
