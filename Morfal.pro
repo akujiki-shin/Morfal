@@ -75,8 +75,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DISTFILES += \
-    map.qml
+DISTFILES +=
 
 QT += \
     quickwidgets \
@@ -86,12 +85,11 @@ QT += \
     core5compat \
     multimedia \
     xml \
-    qml #\
-    #location
+    qml
 
 RESOURCES += \
     qrc.qrc
 
-RC_ICONS = d20.ico
+RC_ICONS = morfal.ico
 
 TARGET = Morfal

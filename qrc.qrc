@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>map.qml</file>
-        <file>d20.ico</file>
+        <file>morfal.ico</file>
     </qresource>
 </RCC>
