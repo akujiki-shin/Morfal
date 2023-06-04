@@ -53,7 +53,6 @@ public:
                const QStyleOptionGraphicsItem *option,
                QWidget *widget) override;
 
-    //void SetImage(const QString& imagePath);
     void SetSelected(int id);
     void SetSelected(const QList<int> selection);
     int GetSelectedZoneCount() const;

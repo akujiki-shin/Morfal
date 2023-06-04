@@ -114,8 +114,5 @@ int main(int argc, char *argv[])
     w.setWindowTitle("Morfal - Virtual Pen and Paper");
     w.show();
 
-    //QQmlApplicationEngine engine;
-    //engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
-
     return application.exec();
 }

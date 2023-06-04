@@ -75,13 +75,6 @@ DrawableMap::DrawableMap(QWidget *parent)
 
     m_PixmapItem->setZValue(0);
     m_MapZoneGraphicsObject->setZValue(1);
-/*
-    if (parent != nullptr)
-    {
-        DrawableMap* view = new DrawableMap();
-        view->setScene(scene);
-        view->show();
-    }*/
 }
 
 DrawableMap::~DrawableMap()

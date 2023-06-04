@@ -31,9 +31,6 @@
 #include "IgnoreHoverEventFilter.h"
 #include "minimalscopeprofiler.h"
 
-//#include <QtLocation>
-//#include <QtLocation/RouteQuery>
-
 MainWindow::MainWindow(QWidget *parent)
     : super(parent)
     , ui(new Ui::MainWindow)

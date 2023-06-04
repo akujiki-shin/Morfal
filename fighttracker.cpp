@@ -58,9 +58,6 @@ void FightTracker::Initialize()
     m_Table[(int)TableType::Monster] = ui->monstersFightTable;
     m_Table[(int)TableType::Player] = ui->playersFightTable;
 
-    //QRegularExpressionValidator* diceValidator = new QRegularExpressionValidator(DiceHelper::DiceRegExp, this);
-    //ui->customDiceLineEdit->setValidator(diceValidator);
-
     QHBoxLayout* diceLayout = new QHBoxLayout();
     diceLayout->setContentsMargins(0, 0, 0, 0);
     ui->customDiceFrame->setLayout(diceLayout);
